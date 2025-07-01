@@ -1,28 +1,27 @@
-# app.py
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import os
 import subprocess
-import shutil # For removing directories
-import re     # For sanitizing repo names
-import sys    # For sys.exit()
-from urllib.parse import urlparse, urlunparse # Still needed for sanitize_repo_name
+import shutil 
+import re     
+import sys   
+from urllib.parse import urlparse, urlunparse
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for development. Adjust or remove in production.
+CORS(app) 
 
-# Base directory where repositories will be cloned
-# Make sure this directory exists and your Flask app has write permissions.
+
+
 REPO_BASE_DIR = os.path.join(os.getcwd(), 'cloned_repos')
 
-# Ensure the base directory exists
+
 os.makedirs(REPO_BASE_DIR, exist_ok=True)
 
-# --- Configuration for Git Operations ---
-# Timeout for git clone (in seconds). Adjust based on expected repo size and network speed.
-CLONE_TIMEOUT_SECONDS = 600 # 10 minutes
-# Timeout for git fetch (in seconds)
-FETCH_TIMEOUT_SECONDS = 120 # 2 minutes
+
+CLONE_TIMEOUT_SECONDS = 600
+
+FETCH_TIMEOUT_SECONDS = 120 
 
 def sanitize_repo_name(url):
     """
@@ -30,21 +29,21 @@ def sanitize_repo_name(url):
     Removes protocol, slashes, and .git extension.
     """
     parsed_url = urlparse(url)
-    # Reconstruct URL without scheme, netloc (which might contain credentials), and .git
+   
     if parsed_url.netloc:
         name = parsed_url.netloc + parsed_url.path
-    else: # Handle git@ URLs where scheme and netloc might be empty
+    else: 
         name = url.replace('git@', '').replace(':', '/')
 
     name = name.replace('.git', '')
-    # Replace non-alphanumeric characters (except hyphens and underscores) with hyphens
+
     name = re.sub(r'[^a-zA-Z0-9_-]', '-', name)
-    # Replace multiple hyphens with a single one
+  
     name = re.sub(r'-+', '-', name)
-    # Remove any leading/trailing hyphens
+ 
     name = name.strip('-')
 
-    # Ensure it's not empty, or contains only invalid characters
+    
     if not name or not re.search(r'[a-zA-Z0-9]', name):
         raise ValueError("Invalid repository URL provided, cannot create a safe directory name.")
     return name
@@ -55,20 +54,17 @@ def get_repo_path(repo_url):
         repo_name = sanitize_repo_name(repo_url)
         return os.path.join(REPO_BASE_DIR, repo_name)
     except ValueError as e:
-        raise e # Re-raise the error from sanitize_repo_name
+        raise e
 
-def clone_or_fetch_repo(repo_url): # Removed username, password parameters
-    """
-    Clones a repository if it doesn't exist locally,
-    otherwise fetches the latest changes.
-    """
-    repo_path = "" # Initialize to ensure it's defined
+def clone_or_fetch_repo(repo_url): 
+   
+    repo_path = "" 
     try:
         repo_path = get_repo_path(repo_url)
     except ValueError as e:
         raise Exception(f"Invalid repository URL: {e}")
 
-    # No construct_auth_url here, as credentials are not handled in this version
+ 
     git_command_url = repo_url
 
     if not os.path.exists(repo_path):
@@ -103,7 +99,6 @@ def clone_or_fetch_repo(repo_url): # Removed username, password parameters
     else:
         print(f"Repository {repo_url} already exists. Fetching latest changes in {repo_path} (Timeout: {FETCH_TIMEOUT_SECONDS}s)...")
         try:
-            # No remote.origin.url config update in this version, as no credentials are passed
             subprocess.run(
                 ['git', '-C', repo_path, 'fetch', 'origin'],
                 check=True,
@@ -123,7 +118,6 @@ def clone_or_fetch_repo(repo_url): # Removed username, password parameters
             print(f"An unexpected error occurred during fetching: {e}")
             raise Exception(f"An unexpected error occurred during fetching: {str(e)}")
 
-# --- Backend API Endpoints ---
 
 @app.route('/')
 def index():
@@ -138,13 +132,13 @@ def get_branches():
     """
     data = request.get_json()
     repo_url = data.get('repoUrl')
-    # Removed username, password from data retrieval
+  
 
     if not repo_url:
         return jsonify({"error": "Repository URL is required."}), 400
 
     try:
-        clone_or_fetch_repo(repo_url) # No credentials passed
+        clone_or_fetch_repo(repo_url) 
         repo_path = get_repo_path(repo_url)
 
         command = ['git', '-C', repo_path, 'branch', '-r']
@@ -180,7 +174,7 @@ def get_diff():
     """
     data = request.get_json()
     repo_url = data.get('repoUrl')
-    # Removed username, password from data retrieval
+   
     branch1 = data.get('branch1')
     branch2 = data.get('branch2')
 
@@ -188,7 +182,7 @@ def get_diff():
         return jsonify({"error": "Repository URL, branch1, and branch2 are required."}), 400
 
     try:
-        clone_or_fetch_repo(repo_url) # No credentials passed
+        clone_or_fetch_repo(repo_url)
         repo_path = get_repo_path(repo_url)
 
         print(f"Getting diff for origin/{branch1}..origin/{branch2} in {repo_path}")
