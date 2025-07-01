@@ -27,10 +27,7 @@ CLONE_TIMEOUT_SECONDS = 600
 FETCH_TIMEOUT_SECONDS = 120 
 
 def sanitize_repo_name(url):
-    """
-    Sanitizes a repository URL to create a safe directory name.
-    Removes protocol, slashes, and .git extension.
-    """
+    
     parsed_url = urlparse(url)
    
     if parsed_url.netloc:
@@ -51,7 +48,7 @@ def sanitize_repo_name(url):
     return name
 
 def get_repo_path(repo_url):
-    """Calculates the local path for a given repository URL."""
+   
     try:
         repo_name = sanitize_repo_name(repo_url)
         return os.path.join(REPO_BASE_DIR, repo_name)
@@ -125,15 +122,12 @@ def clone_or_fetch_repo(repo_url):
 
 @app.route('/')
 def index():
-    """Renders the main HTML page."""
+    
     return render_template('index.html')
 
 @app.route('/api/branches', methods=['POST'])
 def get_branches():
-    """
-    API endpoint to fetch branches for a given GitLab repository URL.
-    This will clone/fetch the repo and then list its branches.
-    """
+   
     data = request.get_json()
     repo_url = data.get('repoUrl')
     username = parser['default']['USERNAME']
@@ -177,10 +171,7 @@ def get_branches():
 
 @app.route('/api/diff', methods=['POST'])
 def get_diff():
-    """
-    API endpoint to compare two branches of a given GitLab repository.
-    This will ensure the repo is updated and then execute 'git diff'.
-    """
+   
     data = request.get_json()
     repo_url = data.get('repoUrl')
    

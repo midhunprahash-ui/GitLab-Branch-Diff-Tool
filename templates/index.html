@@ -17,41 +17,41 @@
 
         .diff-line-added {
             background-color: #dcfce7;
-
+            /* green-100 */
             color: #16a34a;
-
+            /* green-700 */
         }
 
         .diff-line-deleted {
             background-color: #fee2e2;
-
+            /* red-100 */
             color: #dc2626;
-
+            /* red-700 */
         }
 
         .diff-line-common {
             background-color: #f3f4f6;
-
+            /* gray-100 */
             color: #4b5563;
-
+            /* gray-700 */
         }
 
         .diff-header {
             color: #2563eb;
-
+            /* blue-700 */
             font-weight: bold;
         }
 
         .diff-info {
             color: #d97706;
-
+            /* amber-700 */
         }
 
         .diff-hunk-header {
             background-color: #e0f2fe;
-
+            /* light-blue-100 */
             color: #0369a1;
-
+            /* light-blue-800 */
             font-weight: bold;
             padding: 0.25rem 0.5rem;
             border-radius: 0.25rem;
@@ -78,12 +78,12 @@
             display: flex;
             width: 100%;
             border: 1px solid #afb4bd;
-
+            /* gray-400 */
             border-radius: 0.5rem;
             overflow: hidden;
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
             font-size: 0.875rem;
-
+            /* text-sm */
             line-height: 1.5;
         }
 
@@ -143,8 +143,8 @@
 
 <body class="min-h-screen bg-gray-100 p-4 text-gray-800 flex flex-col items-center">
 
-    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h1 class="text-3xl font-bold text-center text-blue-700 mb-6 flex items-center justify-center">
+    <div class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
+        <h1 class="text-3xl font-bold text-center text-gray-700 mb-6 flex items-center justify-center">
             GitLab Branch Diff Tool
         </h1>
 
@@ -243,7 +243,7 @@
 
 
         <button id="compare-branches-btn"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center"
+            class="w-full bg-gray-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center"
             disabled>
             <span id="compare-spinner" class="hidden animate-spin mr-2 h-5 w-5">
 
@@ -270,7 +270,7 @@
     </div>
 
 
-    <div id="diff-output-container" class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 hidden">
+    <div id="diff-output-container" class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
         <h2 class="text-2xl font-bold text-blue-700 mb-4">Comparison Results</h2>
         <div id="diff-display" class="w-full">
 
@@ -314,7 +314,7 @@
              * @param {string[]} options - An array of strings for the option values and text.
              */
             const populateDropdown = (selectElement, options) => {
-                selectElement.innerHTML = ''; // Clear existing options
+                selectElement.innerHTML = '';
                 if (options.length === 0) {
                     const option = document.createElement('option');
                     option.value = '';
@@ -351,10 +351,10 @@
                     // Start of a new file diff
                     if (line.startsWith('diff --git')) {
                         if (inDiffBlock) {
-                            // Render previous file's diff before starting a new one
+
                             appendFileDiff(currentFileDiff);
                         }
-                        currentFileDiff = [line]; // Start new file diff with this line
+                        currentFileDiff = [line];
                         inDiffBlock = true;
                     } else if (inDiffBlock) {
                         currentFileDiff.push(line);
