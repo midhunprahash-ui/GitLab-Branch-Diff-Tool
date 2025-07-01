@@ -7,6 +7,7 @@ import shutil
 import re     
 import sys   
 from urllib.parse import urlparse, urlunparse
+from configparser import ConfigParser
 
 app = Flask(__name__)
 CORS(app) 
@@ -14,6 +15,8 @@ CORS(app)
 
 
 REPO_BASE_DIR = os.path.join(os.getcwd(), 'cloned_repos')
+parser = ConfigParser()
+parser.read(".config")
 
 
 os.makedirs(REPO_BASE_DIR, exist_ok=True)
@@ -42,7 +45,6 @@ def sanitize_repo_name(url):
     name = re.sub(r'-+', '-', name)
  
     name = name.strip('-')
-
     
     if not name or not re.search(r'[a-zA-Z0-9]', name):
         raise ValueError("Invalid repository URL provided, cannot create a safe directory name.")
@@ -59,6 +61,8 @@ def get_repo_path(repo_url):
 def clone_or_fetch_repo(repo_url): 
    
     repo_path = "" 
+
+
     try:
         repo_path = get_repo_path(repo_url)
     except ValueError as e:
@@ -132,6 +136,11 @@ def get_branches():
     """
     data = request.get_json()
     repo_url = data.get('repoUrl')
+    username = parser['default']['USERNAME']
+    pat = parser['default']['PAT']
+    print(repo_url)
+    repo_url = repo_url.replace("https://", "https://" + username + ":" + pat + "@")
+    print(repo_url)
   
 
     if not repo_url:
