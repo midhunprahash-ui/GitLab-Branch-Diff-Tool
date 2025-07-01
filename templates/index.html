@@ -4,60 +4,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=2.0">
-    <title>GitLab Branch Diff Tool</title>
+    <title>GitLab Branch Diff & File Viewer</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
 
-
+        /* Diff styling remains the same */
         .diff-line-added {
             background-color: #dcfce7;
-            /* green-100 */
             color: #16a34a;
-            /* green-700 */
         }
 
         .diff-line-deleted {
             background-color: #fee2e2;
-            /* red-100 */
             color: #dc2626;
-            /* red-700 */
         }
 
         .diff-line-common {
             background-color: #f3f4f6;
-            /* gray-100 */
             color: #4b5563;
-            /* gray-700 */
         }
 
         .diff-header {
             color: #2563eb;
-            /* blue-700 */
             font-weight: bold;
         }
 
         .diff-info {
             color: #d97706;
-            /* amber-700 */
         }
 
         .diff-hunk-header {
             background-color: #e0f2fe;
-            /* light-blue-100 */
             color: #0369a1;
-            /* light-blue-800 */
             font-weight: bold;
             padding: 0.25rem 0.5rem;
             border-radius: 0.25rem;
             margin-bottom: 0.5rem;
         }
-
 
         @keyframes spin {
             from {
@@ -73,17 +61,14 @@
             animation: spin 1s linear infinite;
         }
 
-
         .diff-split-container {
             display: flex;
             width: 100%;
             border: 1px solid #afb4bd;
-            /* gray-400 */
             border-radius: 0.5rem;
             overflow: hidden;
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
             font-size: 0.875rem;
-            /* text-sm */
             line-height: 1.5;
         }
 
@@ -91,52 +76,57 @@
             flex: 1;
             padding: 0.5rem;
             overflow-x: auto;
-
             white-space: pre;
-
         }
 
         .diff-pane-left {
             border-right: 1px solid #e5e7eb;
-
             background-color: #f9fafb;
-
         }
 
         .diff-line {
             display: flex;
             align-items: flex-start;
             min-height: 1.5em;
-
         }
 
         .diff-line-number {
             flex-shrink: 0;
             width: 3rem;
-
             text-align: right;
             padding-right: 0.5rem;
             color: #9ca3af;
-
             user-select: none;
-
         }
 
         .diff-line-content {
             flex-grow: 1;
             padding-left: 0.5rem;
             border-left: 1px solid transparent;
-
         }
 
         .diff-line-deleted .diff-line-content {
             border-left-color: #ef4444;
-
         }
 
         .diff-line-added .diff-line-content {
             border-left-color: #22c55e;
+        }
 
+        /* Styling for the file content display */
+        .file-content-display {
+            background-color: #1f2937;
+            /* Dark background for code */
+            color: #f9fafb;
+            /* Light text for code */
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            /* Allows text to wrap but preserves whitespace */
         }
     </style>
 </head>
@@ -145,13 +135,11 @@
 
     <div class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
         <h1 class="text-3xl font-bold text-center text-gray-700 mb-6 flex items-center justify-center">
-            GitLab Branch Diff Tool
+            GitLab Branch Diff & File Viewer
         </h1>
-
 
         <div class="mb-6">
             <label for="repo-url" class="block text-gray-700 text-sm font-medium mb-2">
-
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="inline-block mr-1 h-4 w-4">
@@ -160,56 +148,91 @@
                 </svg>
                 GitLab Repository URL
             </label>
-            <div class="flex gap-2">
-                <input type="text" id="repo-url"
-                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                    placeholder="e.g., https://gitlab.com/your-org/your-repo.git" />
-                <button id="fetch-branches-btn"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300 ease-in-out flex items-center justify-center">
-                    <span id="fetch-branches-spinner" class="hidden animate-spin mr-2 h-5 w-5">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2v4"></path>
-                            <path d="M12 18v4"></path>
-                            <path d="M4.93 4.93l2.83 2.83"></path>
-                            <path d="M16.24 16.24l2.83 2.83"></path>
-                            <path d="M2 12h4"></path>
-                            <path d="M18 12h4"></path>
-                            <path d="M4.93 19.07l2.83-2.83"></path>
-                            <path d="M16.24 7.76l2.83-2.83"></path>
-                        </svg>
-                    </span>
-                    <span id="fetch-branches-text">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="mr-2 h-5 w-5">
-                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-                            <path d="M21 3v5h-5"></path>
-                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-                            <path d="M3 21v-5h5"></path>
-                        </svg>
-                        Fetch Branches
-                    </span>
-                </button>
-            </div>
+            <input type="text" id="repo-url"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="e.g., https://gitlab.com/your-org/your-repo.git" />
         </div>
 
+        <div class="mb-4">
+            <label for="gitlab-username" class="block text-gray-700 text-sm font-medium mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="inline-block mr-1 h-4 w-4">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                GitLab Username (For reference, not strictly used for PAT auth)
+            </label>
+            <input type="text" id="gitlab-username"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="Your GitLab username" />
+        </div>
+
+        <div class="mb-6">
+            <label for="gitlab-pat" class="block text-gray-700 text-sm font-medium mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="inline-block mr-1 h-4 w-4">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                GitLab Personal Access Token (PAT)
+            </label>
+            <input type="password" id="gitlab-pat"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="Enter your GitLab PAT" />
+        </div>
+
+        <div class="mb-6">
+            <button id="fetch-branches-btn"
+                class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300 ease-in-out flex items-center justify-center">
+                <span id="fetch-branches-spinner" class="hidden animate-spin mr-2 h-5 w-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v4"></path>
+                        <path d="M12 18v4"></path>
+                        <path d="M4.93 4.93l2.83 2.83"></path>
+                        <path d="M16.24 16.24l2.83 2.83"></path>
+                        <path d="M2 12h4"></path>
+                        <path d="M18 12h4"></path>
+                        <path d="M4.93 19.07l2.83-2.83"></path>
+                        <path d="M16.24 7.76l2.83-2.83"></path>
+                    </svg>
+                </span>
+                <span id="fetch-branches-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="mr-2 h-5 w-5">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                        <path d="M21 3v5h-5"></path>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                        <path d="M3 21v-5h5"></path>
+                    </svg>
+                    Fetch Branches
+                </span>
+            </button>
+        </div>
+        <div id="error-message"
+            class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+        </div>
+    </div>
+
+    <div class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
+        <h2 class="text-2xl font-bold text-gray-700 mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="mr-2 text-blue-500">
+                <path d="M6 3v12"></path>
+                <path d="M18 6H9a3 3 0 0 0-3 3v10"></path>
+                <path d="M12 10 9 7 6 10"></path>
+                <path d="M18 10 15 7 12 10"></path>
+            </svg>
+            Branch Comparison
+        </h2>
 
         <div class="flex flex-col md:flex-row gap-6 mb-6">
-
             <div class="flex-1">
                 <label for="branch1" class="block text-gray-700 text-sm font-medium mb-2">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="inline-block mr-1 h-4 w-4">
-                        <line x1="6" x2="6" y1="3" y2="15"></line>
-                        <path d="M18 6H9a3 3 0 0 0-3 3v10"></path>
-                        <path d="M12 10 9 7 6 10"></path>
-                        <path d="M18 10 15 7 12 10"></path>
-                    </svg>
                     Select Base Branch
                 </label>
                 <select id="branch1"
@@ -219,18 +242,8 @@
                 </select>
             </div>
 
-
             <div class="flex-1">
                 <label for="branch2" class="block text-gray-700 text-sm font-medium mb-2">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="inline-block mr-1 h-4 w-4">
-                        <line x1="6" x2="6" y1="3" y2="15"></line>
-                        <path d="M18 6H9a3 3 0 0 0-3 3v10"></path>
-                        <path d="M12 10 9 7 6 10"></path>
-                        <path d="M18 10 15 7 12 10"></path>
-                    </svg>
                     Select Compare Branch
                 </label>
                 <select id="branch2"
@@ -241,12 +254,10 @@
             </div>
         </div>
 
-
         <button id="compare-branches-btn"
             class="w-full bg-gray-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center"
             disabled>
             <span id="compare-spinner" class="hidden animate-spin mr-2 h-5 w-5">
-
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 2v4"></path>
@@ -262,57 +273,117 @@
             <span id="compare-text">Compare Branches</span>
         </button>
 
+    </div>
 
-        <div id="error-message"
-            class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
-
+    <div id="diff-output-container" class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4 mb-8">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">Comparison Results</h2>
+        <div id="diff-display" class="w-full">
         </div>
     </div>
 
 
-    <div id="diff-output-container" class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">Comparison Results</h2>
-        <div id="diff-display" class="w-full">
+    <div class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
+        <h2 class="text-2xl font-bold text-gray-700 mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="mr-2 text-green-600">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+            View Single File Content
+        </h2>
 
+        <div class="mb-4">
+            <label for="file-content-branch" class="block text-gray-700 text-sm font-medium mb-2">
+                Select Branch/Ref
+            </label>
+            <select id="file-content-branch"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white"
+                disabled>
+                <option value="">No branches available</option>
+            </select>
         </div>
+
+        <div class="mb-6">
+            <label for="file-path" class="block text-gray-700 text-sm font-medium mb-2">
+                File Path (e.g., `src/main.py` or `README.md`)
+            </label>
+            <input type="text" id="file-path"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="Enter file path relative to repository root" />
+        </div>
+
+        <button id="fetch-file-content-btn"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center"
+            disabled>
+            <span id="file-content-spinner" class="hidden animate-spin mr-2 h-5 w-5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v4"></path>
+                    <path d="M12 18v4"></path>
+                    <path d="M4.93 4.93l2.83 2.83"></path>
+                    <path d="M16.24 16.24l2.83 2.83"></path>
+                    <path d="M2 12h4"></path>
+                    <path d="M18 12h4"></path>
+                    <path d="M4.93 19.07l2.83-2.83"></path>
+                    <path d="M16.24 7.76l2.83-2.83"></path>
+                </svg>
+            </span>
+            <span id="file-content-text">Fetch File Content</span>
+        </button>
+        <div id="file-content-error"
+            class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+        </div>
+    </div>
+
+    <div id="file-content-output-container" class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
+        <h2 class="text-2xl font-bold text-green-700 mb-4">File Content</h2>
+        <pre id="file-content-display" class="file-content-display"></pre>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const gitlabPatInput = document.getElementById('gitlab-pat');
+            const gitlabUsernameInput = document.getElementById('gitlab-username');
             const repoUrlInput = document.getElementById('repo-url');
 
             const fetchBranchesBtn = document.getElementById('fetch-branches-btn');
             const fetchBranchesSpinner = document.getElementById('fetch-branches-spinner');
             const fetchBranchesText = document.getElementById('fetch-branches-text');
+
+            // Branch Comparison Elements
             const branch1Select = document.getElementById('branch1');
             const branch2Select = document.getElementById('branch2');
             const compareBranchesBtn = document.getElementById('compare-branches-btn');
             const compareSpinner = document.getElementById('compare-spinner');
             const compareText = document.getElementById('compare-text');
-            const errorMessageDiv = document.getElementById('error-message');
             const diffOutputContainer = document.getElementById('diff-output-container');
             const diffDisplayDiv = document.getElementById('diff-display');
 
-            /**
-             * Displays an error message.
-             * @param {string} message - The error message to display.
-             */
-            const showError = (message) => {
-                errorMessageDiv.textContent = message;
-                errorMessageDiv.classList.remove('hidden');
+            // File Content Viewer Elements
+            const fileContentBranchSelect = document.getElementById('file-content-branch');
+            const filePathInput = document.getElementById('file-path');
+            const fetchFileContentBtn = document.getElementById('fetch-file-content-btn');
+            const fileContentSpinner = document.getElementById('file-content-spinner');
+            const fileContentText = document.getElementById('file-content-text');
+            const fileContentOutputContainer = document.getElementById('file-content-output-container');
+            const fileContentDisplayDiv = document.getElementById('file-content-display');
+            const fileContentErrorDiv = document.getElementById('file-content-error');
+
+
+            const showError = (message, targetDiv = errorMessageDiv) => {
+                targetDiv.textContent = message;
+                targetDiv.classList.remove('hidden');
             };
 
-
-            const hideError = () => {
-                errorMessageDiv.classList.add('hidden');
-                errorMessageDiv.textContent = '';
+            const hideError = (targetDiv = errorMessageDiv) => {
+                targetDiv.classList.add('hidden');
+                targetDiv.textContent = '';
             };
 
-            /**
-             * Populates a select dropdown with an array of options.
-             * @param {HTMLSelectElement} selectElement - The select element to populate.
-             * @param {string[]} options - An array of strings for the option values and text.
-             */
             const populateDropdown = (selectElement, options) => {
                 selectElement.innerHTML = '';
                 if (options.length === 0) {
@@ -321,7 +392,6 @@
                     option.textContent = 'No branches available';
                     selectElement.appendChild(option);
                     selectElement.disabled = true;
-                    compareBranchesBtn.disabled = true;
                 } else {
                     options.forEach(branch => {
                         const option = document.createElement('option');
@@ -330,28 +400,28 @@
                         selectElement.appendChild(option);
                     });
                     selectElement.disabled = false;
-
-                    if (branch1Select.value && branch2Select.value && branch1Select.value !== branch2Select.value) {
-                        compareBranchesBtn.disabled = false;
-                    }
                 }
             };
 
-            /**
-             * Renders the diff output in a split view.
-             * @param {string} rawDiff - The raw git diff string.
-             */
             const renderSplitDiff = (rawDiff) => {
                 diffDisplayDiv.innerHTML = '';
+                diffOutputContainer.classList.remove('hidden');
+
+                if (!rawDiff || rawDiff.trim() === '') {
+                    const noDiffMessage = document.createElement('p');
+                    noDiffMessage.className = 'text-center text-gray-600 p-4';
+                    noDiffMessage.textContent = 'No differences found between the selected branches.';
+                    diffDisplayDiv.appendChild(noDiffMessage);
+                    return;
+                }
+
                 const lines = rawDiff.split('\n');
                 let currentFileDiff = [];
                 let inDiffBlock = false;
 
                 lines.forEach(line => {
-                    // Start of a new file diff
                     if (line.startsWith('diff --git')) {
                         if (inDiffBlock) {
-
                             appendFileDiff(currentFileDiff);
                         }
                         currentFileDiff = [line];
@@ -361,12 +431,9 @@
                     }
                 });
 
-
                 if (inDiffBlock) {
                     appendFileDiff(currentFileDiff);
                 }
-
-                diffOutputContainer.classList.remove('hidden');
             };
 
             const appendFileDiff = (fileLines) => {
@@ -411,7 +478,6 @@
                     contentRight.className = 'diff-line-content';
 
                     if (line.startsWith('@@')) {
-
                         const hunkMatch = line.match(/@@ -(\d+)(,\d+)? \+(\d+)(,\d+)? @@/);
                         if (hunkMatch) {
                             currentHunkStartLeft = parseInt(hunkMatch[1], 10);
@@ -426,7 +492,6 @@
                         rightPane.appendChild(hunkHeaderDiv);
                         return;
                     } else if (line.startsWith('--- a/') || line.startsWith('+++ b/')) {
-
                         const infoDiv = document.createElement('div');
                         infoDiv.className = 'diff-info col-span-2 w-full';
                         infoDiv.textContent = line;
@@ -434,7 +499,6 @@
                         rightPane.appendChild(infoDiv);
                         return;
                     } else if (line.startsWith('diff --git') || line.startsWith('index ')) {
-
                         const headerDiv = document.createElement('div');
                         headerDiv.className = 'diff-header col-span-2 w-full';
                         headerDiv.textContent = line;
@@ -444,7 +508,6 @@
                     }
 
                     if (line.startsWith('-')) {
-
                         lineNumberLeft.textContent = leftLineNum;
                         contentLeft.textContent = line;
                         lineDivLeft.classList.add('diff-line-deleted');
@@ -452,14 +515,12 @@
                         lineDivLeft.appendChild(contentLeft);
                         leftPane.appendChild(lineDivLeft);
 
-
                         const emptyLineRight = document.createElement('div');
                         emptyLineRight.className = 'diff-line';
                         emptyLineRight.innerHTML = `<span class="diff-line-number"></span><span class="diff-line-content"></span>`;
                         rightPane.appendChild(emptyLineRight);
                         leftLineNum++;
                     } else if (line.startsWith('+')) {
-
                         lineNumberRight.textContent = rightLineNum;
                         contentRight.textContent = line;
                         lineDivRight.classList.add('diff-line-added');
@@ -467,14 +528,12 @@
                         lineDivRight.appendChild(contentRight);
                         rightPane.appendChild(lineDivRight);
 
-
                         const emptyLineLeft = document.createElement('div');
                         emptyLineLeft.className = 'diff-line';
                         emptyLineLeft.innerHTML = `<span class="diff-line-number"></span><span class="diff-line-content"></span>`;
                         leftPane.appendChild(emptyLineLeft);
                         rightLineNum++;
                     } else {
-
                         lineNumberLeft.textContent = leftLineNum;
                         contentLeft.textContent = line;
                         lineDivLeft.classList.add('diff-line-common');
@@ -499,24 +558,35 @@
                 diffDisplayDiv.appendChild(splitContainer);
             };
 
-
             fetchBranchesBtn.addEventListener('click', async () => {
-                hideError();
+                hideError(); // Main error message
+                hideError(fileContentErrorDiv); // File content error message
+
+                const gitlabPat = gitlabPatInput.value.trim();
                 const repoUrl = repoUrlInput.value.trim();
+                const gitlabUsername = gitlabUsernameInput.value.trim();
 
 
-                if (!repoUrl) {
-                    showError('Please enter a GitLab Repository URL first.');
+                if (!gitlabPat || !repoUrl) {
+                    showError('Please enter GitLab Personal Access Token and Repository URL.');
                     return;
                 }
 
                 fetchBranchesBtn.disabled = true;
                 fetchBranchesSpinner.classList.remove('hidden');
                 fetchBranchesText.classList.add('hidden');
+
+                // Disable branch comparison dropdowns
                 branch1Select.disabled = true;
                 branch2Select.disabled = true;
                 compareBranchesBtn.disabled = true;
                 diffOutputContainer.classList.add('hidden');
+
+                // Disable file content viewer dropdown and button
+                fileContentBranchSelect.disabled = true;
+                fetchFileContentBtn.disabled = true;
+                fileContentOutputContainer.classList.add('hidden');
+
 
                 try {
                     const response = await fetch('/api/branches', {
@@ -524,34 +594,48 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ repoUrl: repoUrl }),
+                        body: JSON.stringify({
+                            repoUrl: repoUrl,
+                            gitlabPat: gitlabPat,
+                            gitlabUsername: gitlabUsername
+                        }),
                     });
 
                     const data = await response.json();
 
                     if (response.ok) {
+                        // Populate both branch dropdowns for diff and file viewer
                         populateDropdown(branch1Select, data.branches);
                         populateDropdown(branch2Select, data.branches);
+                        populateDropdown(fileContentBranchSelect, data.branches);
 
 
                         if (data.branches.length > 0) {
                             branch1Select.value = data.branches[0];
                             if (data.branches.length > 1) {
                                 branch2Select.value = data.branches[1];
+                                fileContentBranchSelect.value = data.branches[0]; // Set default for file viewer
                             } else {
                                 branch2Select.value = data.branches[0];
+                                fileContentBranchSelect.value = data.branches[0];
                             }
-
                             updateCompareButtonState();
+                            updateFileContentButtonState(); // Update new button state
                         } else {
-                            showError('No branches found for this repository.');
+                            showError('No branches found for this repository or access denied. Check URL and PAT.');
+                            updateCompareButtonState(); // Ensure disabled if no branches
+                            updateFileContentButtonState(); // Ensure disabled if no branches
                         }
                     } else {
                         showError(data.error || 'Failed to fetch branches.');
+                        updateCompareButtonState(); // Ensure disabled on error
+                        updateFileContentButtonState(); // Ensure disabled on error
                     }
                 } catch (error) {
                     console.error('Error fetching branches:', error);
                     showError('Network error or server unavailable. Could not fetch branches.');
+                    updateCompareButtonState(); // Ensure disabled on network error
+                    updateFileContentButtonState(); // Ensure disabled on network error
                 } finally {
                     fetchBranchesBtn.disabled = false;
                     fetchBranchesSpinner.classList.add('hidden');
@@ -559,16 +643,15 @@
                 }
             });
 
-
             compareBranchesBtn.addEventListener('click', async () => {
-                hideError();
+                hideError(); // Main error message
+                const gitlabPat = gitlabPatInput.value.trim();
                 const repoUrl = repoUrlInput.value.trim();
-
                 const branch1 = branch1Select.value;
                 const branch2 = branch2Select.value;
 
-                if (!repoUrl || !branch1 || !branch2) {
-                    showError('Please provide a GitLab URL and select both branches.');
+                if (!gitlabPat || !repoUrl || !branch1 || !branch2) {
+                    showError('Please ensure all required fields (PAT, Repository URL, and branches) are filled.');
                     return;
                 }
 
@@ -588,8 +671,12 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-
-                        body: JSON.stringify({ repoUrl: repoUrl, branch1: branch1, branch2: branch2 }),
+                        body: JSON.stringify({
+                            repoUrl: repoUrl,
+                            branch1: branch1,
+                            branch2: branch2,
+                            gitlabPat: gitlabPat
+                        }),
                     });
 
                     const data = await response.json();
@@ -610,15 +697,104 @@
             });
 
 
+            // NEW: Fetch File Content Event Listener
+            fetchFileContentBtn.addEventListener('click', async () => {
+                hideError(fileContentErrorDiv); // Specific error div for file content
+                fileContentOutputContainer.classList.add('hidden');
+
+                const gitlabPat = gitlabPatInput.value.trim();
+                const repoUrl = repoUrlInput.value.trim();
+                const filePath = filePathInput.value.trim();
+                const ref = fileContentBranchSelect.value; // Branch selected for file content
+
+                if (!gitlabPat || !repoUrl || !filePath || !ref) {
+                    showError('Please ensure Repository URL, File Path, Branch/Ref, and GitLab PAT are all provided.', fileContentErrorDiv);
+                    return;
+                }
+
+                fetchFileContentBtn.disabled = true;
+                fileContentSpinner.classList.remove('hidden');
+                fileContentText.classList.add('hidden');
+                fileContentDisplayDiv.textContent = ''; // Clear previous content
+
+                try {
+                    const response = await fetch('/api/file_content', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            repoUrl: repoUrl,
+                            filePath: filePath,
+                            ref: ref,
+                            gitlabPat: gitlabPat
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        fileContentDisplayDiv.textContent = data.content;
+                        fileContentOutputContainer.classList.remove('hidden');
+                    } else {
+                        showError(data.error || 'Failed to fetch file content.', fileContentErrorDiv);
+                    }
+                } catch (error) {
+                    console.error('Error fetching file content:', error);
+                    showError('Network error or server unavailable. Could not fetch file content.', fileContentErrorDiv);
+                } finally {
+                    fetchFileContentBtn.disabled = false;
+                    fileContentSpinner.classList.add('hidden');
+                    fileContentText.classList.remove('hidden');
+                }
+            });
+
+
             const updateCompareButtonState = () => {
                 const b1 = branch1Select.value;
                 const b2 = branch2Select.value;
+                const gitlabPat = gitlabPatInput.value.trim();
+                const repoUrl = repoUrlInput.value.trim();
 
-                compareBranchesBtn.disabled = !(b1 && b2 && b1 !== b2);
+                compareBranchesBtn.disabled = !(
+                    gitlabPat &&
+                    repoUrl &&
+                    b1 && b2 && b1 !== b2
+                );
             };
 
+            // NEW: Function to update the state of the "Fetch File Content" button
+            const updateFileContentButtonState = () => {
+                const gitlabPat = gitlabPatInput.value.trim();
+                const repoUrl = repoUrlInput.value.trim();
+                const filePath = filePathInput.value.trim();
+                const ref = fileContentBranchSelect.value;
+
+                fetchFileContentBtn.disabled = !(
+                    gitlabPat &&
+                    repoUrl &&
+                    filePath &&
+                    ref
+                );
+            };
+
+            // Add event listeners to input fields and select dropdowns to update button state dynamically
+            gitlabPatInput.addEventListener('input', () => {
+                updateCompareButtonState();
+                updateFileContentButtonState();
+            });
+            repoUrlInput.addEventListener('input', () => {
+                updateCompareButtonState();
+                updateFileContentButtonState();
+            });
             branch1Select.addEventListener('change', updateCompareButtonState);
             branch2Select.addEventListener('change', updateCompareButtonState);
+            filePathInput.addEventListener('input', updateFileContentButtonState); // NEW listener
+            fileContentBranchSelect.addEventListener('change', updateFileContentButtonState); // NEW listener
+
+            // Initial state update on page load
+            updateCompareButtonState();
+            updateFileContentButtonState(); // NEW initial call
         });
     </script>
 </body>
