@@ -1,134 +1,240 @@
-from flask import Flask, request, jsonify
-import gitlab
-import os
-from urllib.parse import urlparse, unquote
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import requests
+import re
+from urllib.parse import urlparse
+from configparser import ConfigParser
+import base64
 
 app = Flask(__name__)
+CORS(app)
 
-# IMPORTANT: Set your GitLab API base URL.
-# If you are using gitlab.com, it's 'https://gitlab.com/api/v4'
-# If you are using a self-hosted instance, change this to your instance's API URL, e.g., 'https://your-company-gitlab.com/api/v4'
-GITLAB_API_BASE_URL = os.environ.get('GITLAB_API_BASE_URL', 'https://gitlab.com/api/v4')
+# Load configuration
+parser = ConfigParser()
+parser.read(".config")
 
-# Helper function to get project ID or full path from a URL
-def get_project_path_from_url(repo_url):
-    """
-    Extracts the 'namespace/project_path' from a GitLab repository URL.
-    Handles common URL formats.
-    """
-    try:
-        parsed_url = urlparse(repo_url)
-        path_parts = parsed_url.path.strip('/').split('/')
-
-        # Heuristic for common GitLab URL structures:
-        # e.g., https://gitlab.com/namespace/project
-        # e.g., https://gitlab.com/namespace/subgroup/project
-        # Also handles .git suffix
-
-        if len(path_parts) >= 2:
-            # Join all parts after the domain to form the full path
-            full_path = '/'.join(path_parts)
-            # Remove '.git' suffix if present
-            if full_path.endswith('.git'):
-                full_path = full_path[:-4]
-            return unquote(full_path) # URL-decode any parts
-        else:
-            raise ValueError("Invalid GitLab repository URL format.")
-    except Exception as e:
-        print(f"Error parsing URL {repo_url}: {e}")
-        return None
-
-# Existing GitLab client initialization
-def get_gitlab_client(gitlab_pat, repo_url):
-    # This ensures the client is initialized with the correct base URL
-    # derived from the input repo_url's domain, if it's different from default.
-    parsed_repo_url = urlparse(repo_url)
-    gitlab_host = f"{parsed_repo_url.scheme}://{parsed_repo_url.netloc}"
+class GitLabAPI:
+    def __init__(self, base_url="https://gitlab.com", access_token=None):
+        self.base_url = base_url.rstrip('/')
+        self.access_token = access_token
+        self.headers = {
+            'Authorization': f'Bearer {access_token}' if access_token else None,
+            'Content-Type': 'application/json'
+        }
+        # Remove None values from headers
+        self.headers = {k: v for k, v in self.headers.items() if v is not None}
     
-    # Use the extracted host for the GitLab client, then append /api/v4
-    # This makes it flexible for self-hosted instances.
-    client_url = f"{gitlab_host}/api/v4"
+    def parse_gitlab_url(self, repo_url):
+        """
+        Parse GitLab repository URL and extract project path
+        Supports various GitLab URL formats:
+        - https://gitlab.com/user/project
+        - https://gitlab.com/user/project.git
+        - git@gitlab.com:user/project.git
+        - https://custom-gitlab.com/user/project
+        """
+        # Handle SSH URLs
+        if repo_url.startswith('git@'):
+            # git@gitlab.com:user/project.git -> gitlab.com/user/project
+            match = re.match(r'git@([^:]+):(.+?)(?:\.git)?$', repo_url)
+            if match:
+                host, project_path = match.groups()
+                base_url = f"https://{host}"
+                return base_url, project_path
+        
+        # Handle HTTPS URLs
+        parsed = urlparse(repo_url)
+        if parsed.netloc and parsed.path:
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            project_path = parsed.path.strip('/').replace('.git', '')
+            return base_url, project_path
+        
+        raise ValueError(f"Invalid GitLab repository URL: {repo_url}")
+    
+    def get_project_id(self, project_path):
+        """Get project ID from project path"""
+        # URL encode the project path for API calls
+        encoded_path = requests.utils.quote(project_path, safe='')
+        url = f"{self.base_url}/api/v4/projects/{encoded_path}"
+        
+        try:
+            response = requests.get(url, headers=self.headers, timeout=30)
+            response.raise_for_status()
+            return response.json()['id']
+        except requests.exceptions.RequestException as e:
+            if response.status_code == 404:
+                raise Exception(f"Project not found: {project_path}. Please check if the repository exists and is accessible.")
+            elif response.status_code == 401:
+                raise Exception("Authentication failed. Please check your GitLab access token.")
+            elif response.status_code == 403:
+                raise Exception("Access denied. You don't have permission to access this repository.")
+            else:
+                raise Exception(f"Failed to get project information: {str(e)}")
+    
+    def get_branches(self, project_id):
+        """Get all branches for a project"""
+        url = f"{self.base_url}/api/v4/projects/{project_id}/repository/branches"
+        
+        try:
+            response = requests.get(url, headers=self.headers, timeout=30)
+            response.raise_for_status()
+            branches_data = response.json()
+            
+            # Extract branch names
+            branches = [branch['name'] for branch in branches_data]
+            
+            # Sort branches with main/master first
+            branches = sorted(list(set(branches)))
+            if 'main' in branches:
+                branches.insert(0, branches.pop(branches.index('main')))
+            elif 'master' in branches:
+                branches.insert(0, branches.pop(branches.index('master')))
+            
+            return branches
+            
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response') and e.response.status_code == 404:
+                raise Exception("Repository branches not found or not accessible.")
+            else:
+                raise Exception(f"Failed to fetch branches: {str(e)}")
+    
+    def get_compare_diff(self, project_id, from_branch, to_branch):
+        """Get diff between two branches"""
+        url = f"{self.base_url}/api/v4/projects/{project_id}/repository/compare"
+        params = {
+            'from': from_branch,
+            'to': to_branch,
+            'straight': 'true'  # Get direct comparison, not merge-base
+        }
+        
+        try:
+            response = requests.get(url, headers=self.headers, params=params, timeout=60)
+            response.raise_for_status()
+            compare_data = response.json()
+            
+            # Get the diff from the response
+            if 'diffs' in compare_data:
+                # Format the diff similar to git diff output
+                diff_output = ""
+                for diff in compare_data['diffs']:
+                    diff_output += f"diff --git a/{diff['old_path']} b/{diff['new_path']}\n"
+                    if diff.get('new_file'):
+                        diff_output += f"new file mode {diff.get('b_mode', '100644')}\n"
+                    elif diff.get('deleted_file'):
+                        diff_output += f"deleted file mode {diff.get('a_mode', '100644')}\n"
+                    elif diff.get('renamed_file'):
+                        diff_output += f"similarity index {diff.get('similarity_index', 0)}%\n"
+                        diff_output += f"rename from {diff['old_path']}\n"
+                        diff_output += f"rename to {diff['new_path']}\n"
+                    
+                    if 'diff' in diff:
+                        diff_output += diff['diff'] + "\n"
+                
+                return diff_output
+            else:
+                return "No differences found between the branches."
+                
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response'):
+                if e.response.status_code == 400:
+                    raise Exception(f"Invalid branch names: '{from_branch}' or '{to_branch}' may not exist.")
+                elif e.response.status_code == 404:
+                    raise Exception("Comparison not found. Please check if both branches exist.")
+            raise Exception(f"Failed to get diff: {str(e)}")
 
+def get_gitlab_client(repo_url):
+    """Create GitLab API client based on repository URL"""
     try:
-        gl = gitlab.Gitlab(client_url, private_token=gitlab_pat)
-        gl.auth() # Test authentication
-        return gl
-    except gitlab.exceptions.GitlabError as e:
-        raise ValueError(f"GitLab API Error: {e}")
+        # Get access token from config
+        access_token = None
+        if parser.has_option('default', 'GITLAB_TOKEN'):
+            access_token = parser['default']['GITLAB_TOKEN']
+        elif parser.has_option('default', 'PAT'):  # Fallback to existing PAT
+            access_token = parser['default']['PAT']
+        
+        # Parse URL to get GitLab instance
+        if repo_url.startswith('git@'):
+            match = re.match(r'git@([^:]+):', repo_url)
+            if match:
+                base_url = f"https://{match.group(1)}"
+            else:
+                base_url = "https://gitlab.com"
+        else:
+            parsed = urlparse(repo_url)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+        
+        return GitLabAPI(base_url=base_url, access_token=access_token)
+        
     except Exception as e:
-        raise ValueError(f"Failed to connect to GitLab: {e}")
+        raise Exception(f"Failed to initialize GitLab client: {str(e)}")
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-# New API endpoint for fetching repository details
-@app.route('/api/repo_details', methods=['POST'])
-def get_repo_details():
+@app.route('/api/branches', methods=['POST'])
+def get_branches():
     data = request.get_json()
     repo_url = data.get('repoUrl')
-    gitlab_pat = data.get('gitlabPat')
-
-    if not repo_url or not gitlab_pat:
-        return jsonify({"error": "Repository URL and GitLab PAT are required."}), 400
-
+    
+    if not repo_url:
+        return jsonify({"error": "Repository URL is required."}), 400
+    
     try:
-        # Get the GitLab client
-        gl = get_gitlab_client(gitlab_pat, repo_url)
+        # Initialize GitLab API client
+        gitlab_client = get_gitlab_client(repo_url)
         
-        # Extract project path (e.g., 'group/subgroup/project-name')
-        project_path_with_namespace = get_project_path_from_url(repo_url)
-        if not project_path_with_namespace:
-            return jsonify({"error": "Could not parse repository URL. Please ensure it's a valid GitLab project URL."}), 400
-
-        # Use the Projects API to get project details by its path with namespace
-        # Note: 'id' parameter can accept both integer ID or URL-encoded path
-        project = gl.projects.get(project_path_with_namespace, statistics=True, license=True)
-
-        # Extract desired details from the project object
-        details = {
-            "id": project.id,
-            "name": project.name,
-            "path_with_namespace": project.path_with_namespace,
-            "description": project.description,
-            "web_url": project.web_url,
-            "default_branch": project.default_branch,
-            "visibility": project.visibility,
-            "created_at": project.created_at,
-            "last_activity_at": project.last_activity_at,
-            "forks_count": project.forks_count,
-            "star_count": project.star_count,
-            "open_issues_count": project.open_issues_count,
-            "archived": project.archived,
-            "empty_repo": project.empty_repo,
-            "avatar_url": project.avatar_url,
-            "statistics": {
-                "commit_count": project.statistics.get('commit_count'),
-                "storage_size": project.statistics.get('storage_size'), # in bytes
-                "repository_size": project.statistics.get('repository_size'),
-                "wiki_size": project.statistics.get('wiki_size'),
-                "lfs_objects_size": project.statistics.get('lfs_objects_size'),
-                "build_artifacts_size": project.statistics.get('build_artifacts_size')
-            },
-            "license": project.license.get('name') if project.license else None
-        }
-
-        return jsonify(details), 200
-
-    except gitlab.exceptions.GitlabError as e:
-        status_code = e.response_code
-        error_message = e.error_message if hasattr(e, 'error_message') and e.error_message else str(e)
-        if status_code == 404:
-            return jsonify({"error": f"Project not found or access denied for URL: {repo_url}. Details: {error_message}"}), 404
-        elif status_code == 401:
-            return jsonify({"error": f"Authentication failed for GitLab API. Please check your Personal Access Token (PAT) and ensure it has 'read_repository' or 'api' scope. Details: {error_message}"}), 401
-        else:
-            return jsonify({"error": f"GitLab API Error ({status_code}): {error_message}"}), status_code
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        # Parse repository URL
+        base_url, project_path = gitlab_client.parse_gitlab_url(repo_url)
+        
+        # Update client base URL if different
+        if gitlab_client.base_url != base_url:
+            gitlab_client.base_url = base_url
+        
+        # Get project ID
+        project_id = gitlab_client.get_project_id(project_path)
+        
+        # Get branches
+        branches = gitlab_client.get_branches(project_id)
+        
+        return jsonify({"branches": branches})
+        
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return jsonify({"error": f"An unexpected server error occurred: {str(e)}"}), 500
+        print(f"Error in get_branches: {e}")
+        return jsonify({"error": str(e)}), 500
 
-# ... (rest of your existing app.py code for /api/branches, /api/diff, /api/file_content)
+@app.route('/api/diff', methods=['POST'])
+def get_diff():
+    data = request.get_json()
+    repo_url = data.get('repoUrl')
+    branch1 = data.get('branch1')
+    branch2 = data.get('branch2')
+    
+    if not all([repo_url, branch1, branch2]):
+        return jsonify({"error": "Repository URL, branch1, and branch2 are required."}), 400
+    
+    try:
+        # Initialize GitLab API client
+        gitlab_client = get_gitlab_client(repo_url)
+        
+        # Parse repository URL
+        base_url, project_path = gitlab_client.parse_gitlab_url(repo_url)
+        
+        # Update client base URL if different
+        if gitlab_client.base_url != base_url:
+            gitlab_client.base_url = base_url
+        
+        # Get project ID
+        project_id = gitlab_client.get_project_id(project_path)
+        
+        # Get diff between branches
+        diff_output = gitlab_client.get_compare_diff(project_id, branch1, branch2)
+        
+        return jsonify({"diff": diff_output})
+        
+    except Exception as e:
+        print(f"Error in get_diff: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # You might want to remove debug=True in production
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0')
