@@ -221,6 +221,48 @@
         <h2 class="text-2xl font-bold text-gray-700 mb-6 flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="mr-2 text-purple-600">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9A1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                </path>
+            </svg>
+            Repository Details
+        </h2>
+
+        <button id="fetch-repo-details-btn"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center">
+            <span id="repo-details-spinner" class="hidden animate-spin mr-2 h-5 w-5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v4"></path>
+                    <path d="M12 18v4"></path>
+                    <path d="M4.93 4.93l2.83 2.83"></path>
+                    <path d="M16.24 16.24l2.83 2.83"></path>
+                    <path d="M2 12h4"></path>
+                    <path d="M18 12h4"></path>
+                    <path d="M4.93 19.07l2.83-2.83"></path>
+                    <path d="M16.24 7.76l2.83-2.83"></path>
+                </svg>
+            </span>
+            <span id="repo-details-text">Fetch Repository Details</span>
+        </button>
+
+        <div id="repo-details-error"
+            class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+        </div>
+    </div>
+
+    <div id="repo-details-output-container"
+        class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4 mb-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Details:</h3>
+        <pre id="repo-details-display" class="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm"></pre>
+    </div>
+
+    <div class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
+        <h2 class="text-2xl font-bold text-gray-700 mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                 class="mr-2 text-blue-500">
                 <path d="M6 3v12"></path>
                 <path d="M18 6H9a3 3 0 0 0-3 3v10"></path>
@@ -346,6 +388,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM Content Loaded. Initializing script.'); // DEBUG: Confirm script runs
             const gitlabPatInput = document.getElementById('gitlab-pat');
             const gitlabUsernameInput = document.getElementById('gitlab-username');
             const repoUrlInput = document.getElementById('repo-url');
@@ -353,6 +396,7 @@
             const fetchBranchesBtn = document.getElementById('fetch-branches-btn');
             const fetchBranchesSpinner = document.getElementById('fetch-branches-spinner');
             const fetchBranchesText = document.getElementById('fetch-branches-text');
+            const errorMessageDiv = document.getElementById('error-message'); // Ensure this is defined
 
             // Branch Comparison Elements
             const branch1Select = document.getElementById('branch1');
@@ -373,8 +417,17 @@
             const fileContentDisplayDiv = document.getElementById('file-content-display');
             const fileContentErrorDiv = document.getElementById('file-content-error');
 
+            // NEW: Repository Details Elements
+            const fetchRepoDetailsBtn = document.getElementById('fetch-repo-details-btn');
+            const repoDetailsSpinner = document.getElementById('repo-details-spinner');
+            const repoDetailsText = document.getElementById('repo-details-text');
+            const repoDetailsOutputContainer = document.getElementById('repo-details-output-container');
+            const repoDetailsDisplay = document.getElementById('repo-details-display');
+            const repoDetailsErrorDiv = document.getElementById('repo-details-error');
+
 
             const showError = (message, targetDiv = errorMessageDiv) => {
+                console.error('Displaying error:', message); // DEBUG: Log errors
                 targetDiv.textContent = message;
                 targetDiv.classList.remove('hidden');
             };
@@ -559,22 +612,25 @@
             };
 
             fetchBranchesBtn.addEventListener('click', async () => {
+                console.log('Fetch Branches button clicked!'); // DEBUG: Confirm button click
                 hideError(); // Main error message
                 hideError(fileContentErrorDiv); // File content error message
+                hideError(repoDetailsErrorDiv); // NEW: Repo details error message
 
                 const gitlabPat = gitlabPatInput.value.trim();
                 const repoUrl = repoUrlInput.value.trim();
-                const gitlabUsername = gitlabUsernameInput.value.trim();
-
+                const gitlabUsername = gitlabUsernameInput.value.trim(); // This is cosmetic for API calls
 
                 if (!gitlabPat || !repoUrl) {
                     showError('Please enter GitLab Personal Access Token and Repository URL.');
+                    console.log('Missing PAT or Repo URL.'); // DEBUG: Log missing inputs
                     return;
                 }
 
                 fetchBranchesBtn.disabled = true;
                 fetchBranchesSpinner.classList.remove('hidden');
                 fetchBranchesText.classList.add('hidden');
+                console.log('Fetch Branches button disabled, spinner shown.'); // DEBUG: Button state change
 
                 // Disable branch comparison dropdowns
                 branch1Select.disabled = true;
@@ -587,8 +643,13 @@
                 fetchFileContentBtn.disabled = true;
                 fileContentOutputContainer.classList.add('hidden');
 
+                // NEW: Disable repo details button and clear output
+                fetchRepoDetailsBtn.disabled = true;
+                repoDetailsOutputContainer.classList.add('hidden');
+
 
                 try {
+                    console.log('Attempting to fetch branches from API...'); // DEBUG: Before fetch call
                     const response = await fetch('/api/branches', {
                         method: 'POST',
                         headers: {
@@ -597,17 +658,21 @@
                         body: JSON.stringify({
                             repoUrl: repoUrl,
                             gitlabPat: gitlabPat,
-                            gitlabUsername: gitlabUsername
+                            gitlabUsername: gitlabUsername // Still sending, but backend ignores for API
                         }),
                     });
 
+                    console.log('Response received:', response); // DEBUG: After fetch call
                     const data = await response.json();
+                    console.log('Parsed response data:', data); // DEBUG: Parsed JSON data
 
                     if (response.ok) {
                         // Populate both branch dropdowns for diff and file viewer
                         populateDropdown(branch1Select, data.branches);
                         populateDropdown(branch2Select, data.branches);
                         populateDropdown(fileContentBranchSelect, data.branches);
+
+                        console.log('Branches populated:', data.branches); // DEBUG: Branches populated
 
 
                         if (data.branches.length > 0) {
@@ -619,31 +684,30 @@
                                 branch2Select.value = data.branches[0];
                                 fileContentBranchSelect.value = data.branches[0];
                             }
-                            updateCompareButtonState();
-                            updateFileContentButtonState(); // Update new button state
                         } else {
                             showError('No branches found for this repository or access denied. Check URL and PAT.');
-                            updateCompareButtonState(); // Ensure disabled if no branches
-                            updateFileContentButtonState(); // Ensure disabled if no branches
+                            console.log('No branches found.'); // DEBUG: No branches case
                         }
                     } else {
                         showError(data.error || 'Failed to fetch branches.');
-                        updateCompareButtonState(); // Ensure disabled on error
-                        updateFileContentButtonState(); // Ensure disabled on error
+                        console.error('API response not OK:', data.error); // DEBUG: API error
                     }
                 } catch (error) {
-                    console.error('Error fetching branches:', error);
+                    console.error('Error fetching branches:', error); // DEBUG: Catch block error
                     showError('Network error or server unavailable. Could not fetch branches.');
-                    updateCompareButtonState(); // Ensure disabled on network error
-                    updateFileContentButtonState(); // Ensure disabled on network error
                 } finally {
                     fetchBranchesBtn.disabled = false;
                     fetchBranchesSpinner.classList.add('hidden');
                     fetchBranchesText.classList.remove('hidden');
+                    updateCompareButtonState(); // Ensure correct state even on error
+                    updateFileContentButtonState(); // Ensure correct state even on error
+                    updateRepoDetailsButtonState(); // NEW: Ensure correct state for repo details button
+                    console.log('Fetch Branches button re-enabled, spinner hidden.'); // DEBUG: Finally block
                 }
             });
 
             compareBranchesBtn.addEventListener('click', async () => {
+                console.log('Compare Branches button clicked!'); // DEBUG: Confirm button click
                 hideError(); // Main error message
                 const gitlabPat = gitlabPatInput.value.trim();
                 const repoUrl = repoUrlInput.value.trim();
@@ -652,11 +716,13 @@
 
                 if (!gitlabPat || !repoUrl || !branch1 || !branch2) {
                     showError('Please ensure all required fields (PAT, Repository URL, and branches) are filled.');
+                    console.log('Missing PAT, Repo URL, or branches for compare.'); // DEBUG: Missing inputs
                     return;
                 }
 
                 if (branch1 === branch2) {
                     showError('Please select two different branches to compare.');
+                    console.log('Same branches selected for compare.'); // DEBUG: Same branches
                     return;
                 }
 
@@ -664,8 +730,10 @@
                 compareSpinner.classList.remove('hidden');
                 compareText.classList.add('hidden');
                 diffOutputContainer.classList.add('hidden');
+                console.log('Compare Branches button disabled, spinner shown.'); // DEBUG: Button state change
 
                 try {
+                    console.log('Attempting to fetch diff from API...'); // DEBUG: Before fetch call
                     const response = await fetch('/api/diff', {
                         method: 'POST',
                         headers: {
@@ -679,26 +747,31 @@
                         }),
                     });
 
+                    console.log('Response received for diff:', response); // DEBUG: After fetch call
                     const data = await response.json();
+                    console.log('Parsed response data for diff:', data); // DEBUG: Parsed JSON data
 
                     if (response.ok) {
                         renderSplitDiff(data.diff);
                     } else {
                         showError(data.error || 'Failed to fetch diff.');
+                        console.error('API response not OK for diff:', data.error); // DEBUG: API error
                     }
                 } catch (error) {
-                    console.error('Error fetching diff:', error);
+                    console.error('Error fetching diff:', error); // DEBUG: Catch block error
                     showError('Network error or server unavailable. Could not fetch diff.');
                 } finally {
                     compareBranchesBtn.disabled = false;
                     compareSpinner.classList.add('hidden');
                     compareText.classList.remove('hidden');
+                    console.log('Compare Branches button re-enabled, spinner hidden.'); // DEBUG: Finally block
                 }
             });
 
 
-            // NEW: Fetch File Content Event Listener
+            // Fetch File Content Event Listener
             fetchFileContentBtn.addEventListener('click', async () => {
+                console.log('Fetch File Content button clicked!'); // DEBUG: Confirm button click
                 hideError(fileContentErrorDiv); // Specific error div for file content
                 fileContentOutputContainer.classList.add('hidden');
 
@@ -709,6 +782,7 @@
 
                 if (!gitlabPat || !repoUrl || !filePath || !ref) {
                     showError('Please ensure Repository URL, File Path, Branch/Ref, and GitLab PAT are all provided.', fileContentErrorDiv);
+                    console.log('Missing inputs for file content fetch.'); // DEBUG: Missing inputs
                     return;
                 }
 
@@ -716,8 +790,11 @@
                 fileContentSpinner.classList.remove('hidden');
                 fileContentText.classList.add('hidden');
                 fileContentDisplayDiv.textContent = ''; // Clear previous content
+                console.log('Fetch File Content button disabled, spinner shown.'); // DEBUG: Button state change
+
 
                 try {
+                    console.log('Attempting to fetch file content from API...'); // DEBUG: Before fetch call
                     const response = await fetch('/api/file_content', {
                         method: 'POST',
                         headers: {
@@ -731,21 +808,112 @@
                         }),
                     });
 
+                    console.log('Response received for file content:', response); // DEBUG: After fetch call
                     const data = await response.json();
+                    console.log('Parsed response data for file content:', data); // DEBUG: Parsed JSON data
+
 
                     if (response.ok) {
                         fileContentDisplayDiv.textContent = data.content;
                         fileContentOutputContainer.classList.remove('hidden');
                     } else {
                         showError(data.error || 'Failed to fetch file content.', fileContentErrorDiv);
+                        console.error('API response not OK for file content:', data.error); // DEBUG: API error
                     }
                 } catch (error) {
-                    console.error('Error fetching file content:', error);
+                    console.error('Error fetching file content:', error); // DEBUG: Catch block error
                     showError('Network error or server unavailable. Could not fetch file content.', fileContentErrorDiv);
                 } finally {
                     fetchFileContentBtn.disabled = false;
                     fileContentSpinner.classList.add('hidden');
                     fileContentText.classList.remove('hidden');
+                    console.log('Fetch File Content button re-enabled, spinner hidden.'); // DEBUG: Finally block
+                }
+            });
+
+            // NEW: Fetch Repository Details Event Listener
+            fetchRepoDetailsBtn.addEventListener('click', async () => {
+                console.log('Fetch Repository Details button clicked!');
+                hideError(repoDetailsErrorDiv); // Specific error div for repo details
+                repoDetailsOutputContainer.classList.add('hidden');
+                repoDetailsDisplay.textContent = ''; // Clear previous content
+
+                const gitlabPat = gitlabPatInput.value.trim();
+                const repoUrl = repoUrlInput.value.trim();
+
+                if (!gitlabPat || !repoUrl) {
+                    showError('Please enter GitLab Personal Access Token and Repository URL.', repoDetailsErrorDiv);
+                    return;
+                }
+
+                fetchRepoDetailsBtn.disabled = true;
+                repoDetailsSpinner.classList.remove('hidden');
+                repoDetailsText.classList.add('hidden');
+
+                try {
+                    console.log('Attempting to fetch repository details from API...');
+                    const response = await fetch('/api/repo_details', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            repoUrl: repoUrl,
+                            gitlabPat: gitlabPat
+                        }),
+                    });
+
+                    const data = await response.json();
+                    console.log('Parsed response data for repo details:', data);
+
+                    if (response.ok) {
+                        // Format the output nicely
+                        let detailsHtml = `
+                            <strong>Name:</strong> ${data.name} (<a href="${data.web_url}" target="_blank" class="text-blue-600 hover:underline">${data.path_with_namespace}</a>)<br>
+                            <strong>ID:</strong> ${data.id}<br>
+                            <strong>Description:</strong> ${data.description || 'N/A'}<br>
+                            <strong>Default Branch:</strong> ${data.default_branch}<br>
+                            <strong>Visibility:</strong> ${data.visibility}<br>
+                            <strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}<br>
+                            <strong>Last Activity At:</strong> ${new Date(data.last_activity_at).toLocaleString()}<br>
+                            <strong>Forks:</strong> ${data.forks_count}<br>
+                            <strong>Stars:</strong> ${data.star_count}<br>
+                            <strong>Open Issues:</strong> ${data.open_issues_count}<br>
+                            <strong>Archived:</strong> ${data.archived ? 'Yes' : 'No'}<br>
+                            <strong>Empty Repo:</strong> ${data.empty_repo ? 'Yes' : 'No'}<br>
+                            <strong>License:</strong> ${data.license || 'N/A'}<br>
+                        `;
+
+                        if (data.statistics) {
+                            detailsHtml += `<br><strong>Statistics:</strong><br>`;
+                            for (const key in data.statistics) {
+                                let value = data.statistics[key];
+                                if (key.includes('size') && value !== null) { // Convert bytes to MB/GB for display
+                                    const sizeInMB = value / (1024 * 1024);
+                                    if (sizeInMB >= 1024) {
+                                        value = `${(sizeInMB / 1024).toFixed(2)} GB`;
+                                    } else {
+                                        value = `${sizeInMB.toFixed(2)} MB`;
+                                    }
+                                }
+                                if (value !== null) { // Only show if not null
+                                    detailsHtml += `&nbsp;&nbsp;&nbsp;&nbsp;<strong>${key.replace(/_/g, ' ').replace('count', 'Count').replace('size', 'Size')}:</strong> ${value}<br>`;
+                                }
+                            }
+                        }
+
+                        repoDetailsDisplay.innerHTML = detailsHtml;
+                        repoDetailsOutputContainer.classList.remove('hidden');
+                    } else {
+                        showError(data.error || 'Failed to fetch repository details.', repoDetailsErrorDiv);
+                    }
+                } catch (error) {
+                    console.error('Error fetching repo details:', error);
+                    showError('Network error or server unavailable. Could not fetch repository details.', repoDetailsErrorDiv);
+                } finally {
+                    fetchRepoDetailsBtn.disabled = false;
+                    repoDetailsSpinner.classList.add('hidden');
+                    repoDetailsText.classList.remove('hidden');
                 }
             });
 
@@ -756,45 +924,67 @@
                 const gitlabPat = gitlabPatInput.value.trim();
                 const repoUrl = repoUrlInput.value.trim();
 
-                compareBranchesBtn.disabled = !(
+                const shouldBeDisabled = !(
                     gitlabPat &&
                     repoUrl &&
                     b1 && b2 && b1 !== b2
                 );
+                compareBranchesBtn.disabled = shouldBeDisabled;
+                console.log('Update Compare Button State. Disabled:', shouldBeDisabled); // DEBUG: Button state
             };
 
-            // NEW: Function to update the state of the "Fetch File Content" button
+            // Function to update the state of the "Fetch File Content" button
             const updateFileContentButtonState = () => {
                 const gitlabPat = gitlabPatInput.value.trim();
                 const repoUrl = repoUrlInput.value.trim();
                 const filePath = filePathInput.value.trim();
                 const ref = fileContentBranchSelect.value;
 
-                fetchFileContentBtn.disabled = !(
+                const shouldBeDisabled = !(
                     gitlabPat &&
                     repoUrl &&
                     filePath &&
                     ref
                 );
+                fetchFileContentBtn.disabled = shouldBeDisabled;
+                console.log('Update File Content Button State. Disabled:', shouldBeDisabled); // DEBUG: Button state
             };
+
+            // NEW: Function to update the state of the "Fetch Repository Details" button
+            const updateRepoDetailsButtonState = () => {
+                const gitlabPat = gitlabPatInput.value.trim();
+                const repoUrl = repoUrlInput.value.trim();
+
+                const shouldBeDisabled = !(
+                    gitlabPat &&
+                    repoUrl
+                );
+                fetchRepoDetailsBtn.disabled = shouldBeDisabled;
+                console.log('Update Repo Details Button State. Disabled:', shouldBeDisabled);
+            };
+
 
             // Add event listeners to input fields and select dropdowns to update button state dynamically
             gitlabPatInput.addEventListener('input', () => {
                 updateCompareButtonState();
                 updateFileContentButtonState();
+                updateRepoDetailsButtonState(); // NEW listener
             });
             repoUrlInput.addEventListener('input', () => {
                 updateCompareButtonState();
                 updateFileContentButtonState();
+                updateRepoDetailsButtonState(); // NEW listener
             });
             branch1Select.addEventListener('change', updateCompareButtonState);
             branch2Select.addEventListener('change', updateCompareButtonState);
-            filePathInput.addEventListener('input', updateFileContentButtonState); // NEW listener
-            fileContentBranchSelect.addEventListener('change', updateFileContentButtonState); // NEW listener
+            filePathInput.addEventListener('input', updateFileContentButtonState);
+            fileContentBranchSelect.addEventListener('change', updateFileContentButtonState);
 
             // Initial state update on page load
             updateCompareButtonState();
-            updateFileContentButtonState(); // NEW initial call
+            updateFileContentButtonState();
+            updateRepoDetailsButtonState(); // NEW initial call
+            console.log('Initial button states updated.'); // DEBUG: Initial state update
         });
     </script>
 </body>
