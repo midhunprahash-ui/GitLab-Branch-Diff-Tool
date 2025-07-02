@@ -108,6 +108,43 @@
         .animate-spin {
             animation: spin 1s linear infinite;
         }
+
+        /* NEW FILE ITEM STYLES */
+        .file-item {
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.375rem;
+            background-color: #ffffff;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #f3f4f6;
+            font-size: 0.9rem;
+            color: #374151;
+            /* gray-700 */
+            word-wrap: break-word;
+            /* Ensure long file names wrap */
+        }
+
+        .file-added {
+            background-color: #dcfce7;
+            /* green-100 */
+            border-color: #86efac;
+            /* green-300 */
+            color: #16a34a;
+            /* green-700 */
+            font-weight: 500;
+        }
+
+        .file-deleted {
+            background-color: #fee2e2;
+            /* red-100 */
+            border-color: #fca5a5;
+            /* red-300 */
+            color: #dc2626;
+            /* red-700 */
+            font-weight: 500;
+            text-decoration: line-through;
+            /* Optional: show deleted files with a strikethrough */
+        }
     </style>
 </head>
 
@@ -254,25 +291,27 @@
 
     <div id="commit-comparison-output" class="w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
         <h2 class="text-2xl font-bold text-blue-700 mb-4 text-center">
-            <span id="source-branch-name-display" class="text-gray-600"></span> <span class="text-gray-600">VS</span>
+            <span id="source-branch-name-display" class="text-gray-600"></span> <span class="text-gray-600"> VS </span>
             <span id="destination-branch-name-display" class="text-gray-600"></span>
         </h2>
         <div class="commit-list-container">
-            <div class="commit-list-pane">
-                <h3 class="text-xl font-semibold text-amber-700 mb-3">Commits in <span id="source-branch-title">Source
+            <div class="commit-list-pane" id="source-commits-pane">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span id="source-branch-title">Source
                         Branch</span> (<span id="source-count">0</span>)</h3>
                 <div id="source-commits-list">
+                    <!-- Source commits will be rendered here -->
                 </div>
                 <div id="no-source-commits-message"
                     class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
                     No commits found for this branch.
                 </div>
             </div>
-            <div class="commit-list-pane">
-                <h3 class="text-xl font-semibold text-amber-700 mb-3">Commits in <span
+            <div class="commit-list-pane" id="destination-commits-pane">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span
                         id="destination-branch-title">Destination Branch</span> (<span id="destination-count">0</span>)
                 </h3>
                 <div id="destination-commits-list">
+                    <!-- Destination commits will be rendered here -->
                 </div>
                 <div id="no-destination-commits-message"
                     class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
@@ -282,6 +321,41 @@
         </div>
     </div>
 
+
+    <div id="file-comparison-output" class="w-full bg-white rounded-xl shadow-lg p-6 mt-8 mx-4 hidden">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4 text-center">
+            File Differences: <span id="source-files-branch-name-display" class="text-gray-600"></span> <span
+                class="text-gray-600">VS</span> <span id="destination-files-branch-name-display"
+                class="text-gray-600"></span>
+        </h2>
+        <div class="commit-list-container">
+            <div class="commit-list-pane">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span id="source-files-title">Source
+                        Branch</span> (<span id="source-files-count">0</span>)</h3>
+                <div id="source-files-list">
+
+                </div>
+                <div id="no-source-files-message"
+                    class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
+                    No files found in source branch.
+                </div>
+            </div>
+            <div class="commit-list-pane">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span
+                        id="destination-files-title">Destination Branch</span> (<span
+                        id="destination-files-count">0</span>)</h3>
+                <div id="destination-files-list">
+                    <!-- Destination files will be rendered here -->
+                </div>
+                <div id="no-destination-files-message"
+                    class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
+                    No files found in destination branch.
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const repoUrlInput = document.getElementById('repo-url');
@@ -289,24 +363,37 @@
             const fetchBranchesBtn = document.getElementById('fetch-branches-btn');
             const fetchBranchesSpinner = document.getElementById('fetch-branches-spinner');
             const fetchBranchesText = document.getElementById('fetch-branches-text');
-            const sourceBranchSelect = document.getElementById('source-branch'); // Renamed
-            const destinationBranchSelect = document.getElementById('destination-branch'); // Renamed
+            const sourceBranchSelect = document.getElementById('source-branch');
+            const destinationBranchSelect = document.getElementById('destination-branch');
             const compareBranchesBtn = document.getElementById('compare-branches-btn');
             const compareSpinner = document.getElementById('compare-spinner');
             const compareText = document.getElementById('compare-text');
             const errorMessageDiv = document.getElementById('error-message');
 
-            const commitComparisonOutput = document.getElementById('commit-comparison-output'); // New container
+            const commitComparisonOutput = document.getElementById('commit-comparison-output');
             const sourceBranchNameDisplay = document.getElementById('source-branch-name-display');
             const destinationBranchNameDisplay = document.getElementById('destination-branch-name-display');
-            const sourceBranchTitle = document.getElementById('source-branch-title'); // New
-            const destinationBranchTitle = document.getElementById('destination-branch-title'); // New
+            const sourceBranchTitle = document.getElementById('source-branch-title');
+            const destinationBranchTitle = document.getElementById('destination-branch-title');
             const sourceCommitsList = document.getElementById('source-commits-list');
             const destinationCommitsList = document.getElementById('destination-commits-list');
             const sourceCountDisplay = document.getElementById('source-count');
             const destinationCountDisplay = document.getElementById('destination-count');
             const noSourceCommitsMessage = document.getElementById('no-source-commits-message');
             const noDestinationCommitsMessage = document.getElementById('no-destination-commits-message');
+
+            // NEW FILE COMPARISON ELEMENTS
+            const fileComparisonOutput = document.getElementById('file-comparison-output');
+            const sourceFilesBranchNameDisplay = document.getElementById('source-files-branch-name-display');
+            const destinationFilesBranchNameDisplay = document.getElementById('destination-files-branch-name-display');
+            const sourceFilesTitle = document.getElementById('source-files-title');
+            const destinationFilesTitle = document.getElementById('destination-files-title');
+            const sourceFilesList = document.getElementById('source-files-list');
+            const destinationFilesList = document.getElementById('destination-files-list');
+            const sourceFilesCount = document.getElementById('source-files-count');
+            const destinationFilesCount = document.getElementById('destination-files-count');
+            const noSourceFilesMessage = document.getElementById('no-source-files-message');
+            const noDestinationFilesMessage = document.getElementById('no-destination-files-message');
 
 
             const showError = (message) => {
@@ -337,7 +424,6 @@
                     });
                     selectElement.disabled = false;
 
-                    // Re-evaluate compare button state after populating
                     updateCompareButtonState();
                 }
             };
@@ -358,13 +444,23 @@
                 sourceBranchSelect.disabled = true;
                 destinationBranchSelect.disabled = true;
                 compareBranchesBtn.disabled = true;
-                commitComparisonOutput.classList.add('hidden'); // Hide entire comparison container
+
+                // Clear all previous outputs
+                commitComparisonOutput.classList.add('hidden');
                 sourceCommitsList.innerHTML = '';
                 destinationCommitsList.innerHTML = '';
                 noSourceCommitsMessage.classList.add('hidden');
                 noDestinationCommitsMessage.classList.add('hidden');
                 sourceCountDisplay.textContent = '0';
                 destinationCountDisplay.textContent = '0';
+
+                fileComparisonOutput.classList.add('hidden');
+                sourceFilesList.innerHTML = '';
+                destinationFilesList.innerHTML = '';
+                noSourceFilesMessage.classList.add('hidden');
+                noDestinationFilesMessage.classList.add('hidden');
+                sourceFilesCount.textContent = '0';
+                destinationFilesCount.textContent = '0';
 
 
                 try {
@@ -385,10 +481,9 @@
                         if (data.branches.length > 0) {
                             sourceBranchSelect.value = data.branches[0];
                             if (data.branches.length > 1) {
-                                // Default destination to the second branch if available, else first
                                 destinationBranchSelect.value = data.branches[1];
                             } else {
-                                destinationBranchSelect.value = data.branches[0]; // If only one, select same for both (will require user to change)
+                                destinationBranchSelect.value = data.branches[0];
                             }
                             updateCompareButtonState();
                         } else {
@@ -410,6 +505,10 @@
 
             compareBranchesBtn.addEventListener('click', async () => {
                 hideError();
+                compareBranchesBtn.disabled = true;
+                compareSpinner.classList.remove('hidden');
+                compareText.classList.add('hidden');
+
                 const repoUrl = repoUrlInput.value.trim();
                 const pat = patInput.value.trim();
                 const sourceBranch = sourceBranchSelect.value;
@@ -417,18 +516,22 @@
 
                 if (!repoUrl || !sourceBranch || !destinationBranch) {
                     showError('Please provide a GitLab URL and select both branches.');
+                    compareBranchesBtn.disabled = false;
+                    compareSpinner.classList.add('hidden');
+                    compareText.classList.remove('hidden');
                     return;
                 }
 
                 if (sourceBranch === destinationBranch) {
                     showError('Please select two different branches to compare.');
+                    compareBranchesBtn.disabled = false;
+                    compareSpinner.classList.add('hidden');
+                    compareText.classList.remove('hidden');
                     return;
                 }
 
-                compareBranchesBtn.disabled = true;
-                compareSpinner.classList.remove('hidden');
-                compareText.classList.add('hidden');
-                commitComparisonOutput.classList.add('hidden'); // Hide previous output
+                // Clear previous outputs
+                commitComparisonOutput.classList.add('hidden');
                 sourceCommitsList.innerHTML = '';
                 destinationCommitsList.innerHTML = '';
                 noSourceCommitsMessage.classList.add('hidden');
@@ -436,35 +539,68 @@
                 sourceCountDisplay.textContent = '0';
                 destinationCountDisplay.textContent = '0';
 
+                fileComparisonOutput.classList.add('hidden');
+                sourceFilesList.innerHTML = '';
+                destinationFilesList.innerHTML = '';
+                noSourceFilesMessage.classList.add('hidden');
+                noDestinationFilesMessage.classList.add('hidden');
+                sourceFilesCount.textContent = '0';
+                destinationFilesCount.textContent = '0';
+
 
                 try {
-                    // Changed endpoint to /api/compare_commits
-                    const response = await fetch('/api/compare_commits', {
+                    // Fetch commit comparison
+                    const commitResponsePromise = fetch('/api/compare_commits', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ repoUrl: repoUrl, pat: pat, sourceBranch: sourceBranch, destinationBranch: destinationBranch }),
                     });
 
-                    const data = await response.json();
+                    // Fetch file comparison
+                    const fileResponsePromise = fetch('/api/compare_files', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat, sourceBranch: sourceBranch, destinationBranch: destinationBranch }),
+                    });
 
-                    if (response.ok) {
+                    const [commitResponse, fileResponse] = await Promise.all([commitResponsePromise, fileResponsePromise]);
+
+                    const commitData = await commitResponse.json();
+                    const fileData = await fileResponse.json();
+
+                    // Handle Commit Data
+                    if (commitResponse.ok) {
                         sourceBranchNameDisplay.textContent = sourceBranch;
                         destinationBranchNameDisplay.textContent = destinationBranch;
-                        sourceBranchTitle.textContent = sourceBranch; // Update branch name in title
-                        destinationBranchTitle.textContent = destinationBranch; // Update branch name in title
-
+                        sourceBranchTitle.textContent = sourceBranch;
+                        destinationBranchTitle.textContent = destinationBranch;
                         commitComparisonOutput.classList.remove('hidden');
-
-                        renderCommitComparison(data.source_commits, data.destination_commits);
-
+                        renderCommitComparison(commitData.source_commits, commitData.destination_commits);
                     } else {
-                        showError(data.error || 'Failed to fetch commit comparison.');
+                        showError(`Commit comparison failed: ${commitData.error || 'Unknown error.'}`);
                     }
+
+                    // Handle File Data
+                    if (fileResponse.ok) {
+                        sourceFilesBranchNameDisplay.textContent = sourceBranch;
+                        destinationFilesBranchNameDisplay.textContent = destinationBranch;
+                        sourceFilesTitle.textContent = sourceBranch;
+                        destinationFilesTitle.textContent = destinationBranch;
+                        fileComparisonOutput.classList.remove('hidden');
+                        renderFileComparison(fileData.source_files, fileData.destination_files, fileData.added_files_to_destination, fileData.deleted_files_from_source);
+                    } else {
+                        // Show file-specific error, but don't overwrite general error if commit failed
+                        console.error('File comparison error:', fileData.error);
+                        if (!commitResponse.ok) {
+                            console.warn('Both commit and file comparison failed. Showing first error.');
+                        } else {
+                            showError(`File comparison failed: ${fileData.error || 'Unknown error.'}`);
+                        }
+                    }
+
                 } catch (error) {
-                    console.error('Error fetching commit comparison:', error);
-                    showError('Network error or server unavailable. Could not fetch commit comparison.');
+                    console.error('Error during comparison:', error);
+                    showError('Network error or server unavailable. Could not fetch comparison data.');
                 } finally {
                     compareBranchesBtn.disabled = false;
                     compareSpinner.classList.add('hidden');
@@ -502,31 +638,37 @@
 
                 // Render Source Commits
                 sourceCommits.forEach(commit => {
-                    const commitItem = createCommitItemElement(commit);
+                    // Decide if a commit in source is "deleted" from destination's perspective
+                    // This means it's in source but not in destination
+                    let type = '';
+                    if (!destinationCommits.some(dc => dc.hash === commit.hash)) {
+                        type = 'deleted';
+                    }
+                    const commitItem = createCommitItemElement(commit, type);
                     sourceCommitsList.appendChild(commitItem);
                 });
 
                 // Render Destination Commits, apply highlight for new commits
                 destinationCommits.forEach(commit => {
-                    const commitItem = createCommitItemElement(commit);
+                    let type = '';
                     if (!sourceCommitHashes.has(commit.hash)) {
-                        commitItem.classList.add('commit-new-to-destination');
+                        type = 'added'; // Commit in destination but not in source
                     }
+                    const commitItem = createCommitItemElement(commit, type);
                     destinationCommitsList.appendChild(commitItem);
                 });
 
-                // ******************************************************
-                // NEW: Initialize synchronized scrolling after rendering
-                // ******************************************************
+                // Initialize synchronized scrolling after rendering
                 setupSynchronizedScrolling();
             };
 
             /**
              * Creates a DOM element for a single commit item.
              * @param {Object} commit - The commit object.
+             * @param {string} type - 'added', 'deleted', or empty for default styling.
              * @returns {HTMLElement} The created div element.
              */
-            const createCommitItemElement = (commit) => {
+            const createCommitItemElement = (commit, type = '') => {
                 const commitDate = new Date(commit.date);
                 // Manually format to DD/MM/YYYY
                 const day = String(commitDate.getDate()).padStart(2, '0');
@@ -536,6 +678,13 @@
 
                 const commitDiv = document.createElement('div');
                 commitDiv.className = 'commit-item';
+                if (type === 'added') {
+                    commitDiv.classList.add('commit-new-to-destination');
+                } else if (type === 'deleted') {
+                    // You can add a specific class for deleted commits if you want different styling
+                    // commitDiv.classList.add('commit-deleted-from-source');
+                    // For now, no specific class for deleted commits in source, just the logic to identify them
+                }
                 commitDiv.innerHTML = `
                     <p class="commit-hash"><strong>ID:</strong> ${commit.hash.substring(0, 7)}</p>
                     <p class="commit-message"><strong>Message:</strong> ${commit.message}</p>
@@ -547,56 +696,141 @@
                 return commitDiv;
             };
 
+            // NEW: Function to create a file item DOM element
+            /**
+             * Creates a DOM element for a single file item.
+             * @param {string} filePath - The path of the file.
+             * @param {string} type - 'added', 'deleted', or empty for default styling.
+             * @returns {HTMLElement} The created div element.
+             */
+            const createFileItemElement = (filePath, type = '') => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-item';
+                if (type === 'added') {
+                    fileDiv.classList.add('file-added');
+                } else if (type === 'deleted') {
+                    fileDiv.classList.add('file-deleted');
+                }
+                fileDiv.textContent = filePath;
+                return fileDiv;
+            };
+
+            // NEW: Function to render file comparison results
+            /**
+             * Renders the file lists for source and destination branches,
+             * highlighting added and deleted files in the destination branch's view.
+             * @param {Array<string>} sourceFiles - Array of file paths in the source branch.
+             * @param {Array<string>} destinationFiles - Array of file paths in the destination branch.
+             * @param {Array<string>} addedToDestination - Array of file paths added to destination (relative to source).
+             * @param {Array<string>} deletedFromSource - Array of file paths deleted from source (relative to destination).
+             */
+            const renderFileComparison = (sourceFiles, destinationFiles, addedToDestination, deletedFromSource) => {
+                sourceFilesList.innerHTML = '';
+                destinationFilesList.innerHTML = '';
+
+                sourceFilesCount.textContent = sourceFiles.length;
+                destinationFilesCount.textContent = destinationFiles.length;
+
+                if (sourceFiles.length === 0) {
+                    noSourceFilesMessage.classList.remove('hidden');
+                } else {
+                    noSourceFilesMessage.classList.add('hidden');
+                }
+
+                // For destination files, we consider it "empty" if there are no files AND no deletions to show
+                if (destinationFiles.length === 0 && deletedFromSource.length === 0) {
+                    noDestinationFilesMessage.classList.remove('hidden');
+                } else {
+                    noDestinationFilesMessage.classList.add('hidden');
+                }
+
+                const addedFilesSet = new Set(addedToDestination);
+                const deletedFilesSet = new Set(deletedFromSource);
+
+                // Populate Source Files (all files in source)
+                sourceFiles.forEach(file => {
+                    const fileItem = createFileItemElement(file);
+                    sourceFilesList.appendChild(fileItem);
+                });
+
+                // Populate Destination Files (all files currently in destination, with highlighting)
+                // And explicitly add "deleted" files from source to destination view
+                const allDestinationViewFiles = new Set([...destinationFiles, ...deletedFromSource]);
+                const sortedAllDestinationViewFiles = Array.from(allDestinationViewFiles).sort();
+
+                sortedAllDestinationViewFiles.forEach(file => {
+                    let type = '';
+                    let label = '';
+
+                    if (addedFilesSet.has(file)) {
+                        type = 'added';
+                        label = ' (Added)';
+                    } else if (deletedFilesSet.has(file) && !destinationFiles.includes(file)) {
+                        // This file was deleted from source's perspective relative to destination
+                        type = 'deleted';
+                        label = ' (Deleted)';
+                    }
+
+                    const fileItem = createFileItemElement(file, type);
+                    if (label) {
+                        const span = document.createElement('span');
+                        span.textContent = label;
+                        span.className = 'text-xs italic ml-1';
+                        fileItem.appendChild(span);
+                    }
+                    destinationFilesList.appendChild(fileItem);
+                });
+            };
+
 
             const updateCompareButtonState = () => {
+                const repoUrl = repoUrlInput.value.trim();
                 const sourceBranch = sourceBranchSelect.value;
                 const destinationBranch = destinationBranchSelect.value;
 
-                compareBranchesBtn.disabled = !(sourceBranch && destinationBranch && sourceBranch !== destinationBranch);
+                compareBranchesBtn.disabled = !(repoUrl && sourceBranch && destinationBranch && sourceBranch !== destinationBranch);
             };
 
             sourceBranchSelect.addEventListener('change', updateCompareButtonState);
             destinationBranchSelect.addEventListener('change', updateCompareButtonState);
 
-            // ******************************************************
-            // NEW: Synchronized Scrolling Logic
-            // ******************************************************
-            let isScrolling; // Flag to prevent scroll event loops
+
+            const sourceCommitsPane = document.getElementById('source-commits-pane');
+            const destinationCommitsPane = document.getElementById('destination-commits-pane');
+
+            let isScrolling;
 
             const setupSynchronizedScrolling = () => {
                 // Remove previous listeners to prevent duplicates if compare is clicked multiple times
-                sourceCommitsList.removeEventListener('scroll', syncScrollSourceToDestination);
-                destinationCommitsList.removeEventListener('scroll', syncScrollDestinationToSource);
+                sourceCommitsPane.removeEventListener('scroll', syncScrollSourceToDestination);
+                destinationCommitsPane.removeEventListener('scroll', syncScrollDestinationToSource);
 
                 // Add new listeners
-                sourceCommitsList.addEventListener('scroll', syncScrollSourceToDestination);
-                destinationCommitsList.addEventListener('scroll', syncScrollDestinationToSource);
+                sourceCommitsPane.addEventListener('scroll', syncScrollSourceToDestination);
+                destinationCommitsPane.addEventListener('scroll', syncScrollDestinationToSource);
             };
 
             const syncScrollSourceToDestination = () => {
                 if (!isScrolling) {
                     isScrolling = true;
-                    destinationCommitsList.scrollTop = sourceCommitsList.scrollTop;
+                    destinationCommitsPane.scrollTop = sourceCommitsPane.scrollTop;
                 }
-                clearTimeout(isScrolling); // Clear any previous timeout
-                isScrolling = setTimeout(() => { // Set a small delay to reset the flag
+                clearTimeout(isScrolling);
+                isScrolling = setTimeout(() => {
                     isScrolling = false;
-                }, 50); // Adjust delay as needed, 50ms is usually good
+                }, 50);
             };
 
             const syncScrollDestinationToSource = () => {
                 if (!isScrolling) {
                     isScrolling = true;
-                    sourceCommitsList.scrollTop = destinationCommitsList.scrollTop;
+                    sourceCommitsPane.scrollTop = destinationCommitsPane.scrollTop;
                 }
-                clearTimeout(isScrolling); // Clear any previous timeout
-                isScrolling = setTimeout(() => { // Set a small delay to reset the flag
+                clearTimeout(isScrolling);
+                isScrolling = setTimeout(() => {
                     isScrolling = false;
-                }, 50); // Adjust delay as needed
+                }, 50);
             };
-            // ******************************************************
-            // END NEW: Synchronized Scrolling Logic
-            // ******************************************************
         });
     </script>
 </body>
