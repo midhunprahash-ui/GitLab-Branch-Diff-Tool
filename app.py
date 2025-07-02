@@ -1,193 +1,191 @@
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
+# app.py
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS # Import CORS
 import gitlab
-import re # Import regex for URL parsing
+import os
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for all routes (adjust as needed for security)
+CORS(app) # Enable CORS for all origins
 
-# --- Routes for your HTML Frontend ---
+def get_gitlab_instance(gitlab_url, pat):
+    """
+    Helper function to initialize the python-gitlab instance.
+    Handles common URL formatting issues and tests authentication.
+    """
+    # Ensure the GitLab URL is correctly formatted for python-gitlab
+    # It should not end with /api/v4
+    if gitlab_url.endswith('/api/v4'):
+        gitlab_url = gitlab_url.replace('/api/v4', '').rstrip('/')
+    elif gitlab_url.endswith('/'):
+        gitlab_url = gitlab_url.rstrip('/')
+
+    try:
+        gl = gitlab.Gitlab(gitlab_url, private_token=pat)
+        gl.auth() # Test authentication
+        return gl
+    except gitlab.exceptions.GitlabError as e:
+        # Log the error for debugging purposes (optional in production, but useful here)
+        # app.logger.error(f"GitLab authentication error: {e}")
+        raise e # Re-raise to be caught by the calling route
+    except Exception as e:
+        # app.logger.error(f"An unexpected error occurred during GitLab client initialization: {e}")
+        raise e
+
 @app.route('/')
 def index():
+    """Renders the main index page."""
     return render_template('index.html')
 
-# --- API Endpoints ---
+@app.route('/get_projects', methods=['POST'])
+def get_projects():
+    """
+    Fetches and returns a list of projects from GitLab for the given user
+    using python-gitlab.
+    """
+    gitlab_url = request.form.get('gitlab_url')
+    pat = request.form.get('pat')
 
-@app.route('/api/get_repos', methods=['POST'])
-def get_repos():
-    data = request.json
-    raw_gitlab_url = data.get('gitlab_url')
-    pat = data.get('pat')
-
-    if not raw_gitlab_url or not pat:
+    if not gitlab_url or not pat:
         return jsonify({'error': 'GitLab URL and Personal Access Token are required.'}), 400
 
-    # Determine the actual GitLab base URL from the input.
-    # If a profile URL like gitlab.com/username is given, use gitlab.com
-    # Otherwise, use the provided URL directly.
-    gitlab_base_url = raw_gitlab_url
-    if re.match(r'^https?:\/\/gitlab\.com\/[a-zA-Z0-9_-]+$', raw_gitlab_url):
-        gitlab_base_url = 'https://gitlab.com'
-    elif re.match(r'^https?:\/\/gitlab\.com$', raw_gitlab_url):
-        gitlab_base_url = 'https://gitlab.com'
-    # Add more specific checks if you expect other internal URLs like gitlab.organization.com
-
     try:
-        # Initialize GitLab API client
-        gl = gitlab.Gitlab(gitlab_base_url, private_token=pat)
-        gl.auth() # Authenticate with GitLab
+        gl = get_gitlab_instance(gitlab_url, pat)
 
-        # Fetch projects owned by the user whose PAT is provided
-        # This will list both public and private projects accessible by this PAT.
-        projects = gl.projects.list(owned=True, all=True)
+        # Fetch all projects the user is a member of.
+        # all=True handles pagination automatically.
+        projects = gl.projects.list(all=True, membership=True, archived=False)
 
-        repo_list = []
-        for p in projects:
-            repo_list.append({
-                'id': p.id,
-                'name': p.name,
-                'path_with_namespace': p.path_with_namespace,
-                'web_url': p.web_url,
-                'visibility': p.visibility
+        projects_data = []
+        for project in projects:
+            projects_data.append({
+                'id': project.id,
+                'name': project.name_with_namespace,
+                'web_url': project.web_url,
+                'path_with_namespace': project.path_with_namespace # Useful for display or later direct access
             })
-        return jsonify(repo_list)
 
-    except gitlab.exceptions.GitlabAuthenticationError:
-        return jsonify({'error': 'Authentication failed. Check your PAT and ensure it has the correct scopes (e.g., api or read_api).'}), 401
+        return jsonify({'projects': projects_data})
+
     except gitlab.exceptions.GitlabError as e:
-        # This will now include the Cloudflare HTML if that's the error
-        print(f"GitLab API Error in get_repos: {e.response_code} - {e.response_content.decode('utf-8')}") # Log full response for debugging
-        return jsonify({'error': f'GitLab API error: {e.response_code}: {e.error_message or e.response_content.decode("utf-8")[:200]}...'}), 500
+        # Catch specific GitLab API errors (e.g., 401 Unauthorized, 403 Forbidden)
+        return jsonify({'error': f'GitLab API Error: {e}'}), e.response_code if hasattr(e, 'response_code') else 500
     except Exception as e:
-        print(f"An unexpected error occurred in get_repos: {str(e)}") # Log unexpected errors
-        return jsonify({'error': f'An unexpected error occurred: {str(e)}'}), 500
+        # Catch any other unexpected errors
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
 
-@app.route('/api/get_branches/<int:project_id>', methods=['POST'])
-def get_branches(project_id):
-    data = request.json
-    raw_gitlab_url = data.get('gitlab_url')
+@app.route('/get_branches', methods=['POST'])
+def get_branches():
+    """
+    Fetches and returns a list of branches for a given project ID.
+    """
+    data = request.get_json()
+    project_id = data.get('project_id')
+    gitlab_url = data.get('gitlab_url')
     pat = data.get('pat')
 
-    if not raw_gitlab_url or not pat:
-        return jsonify({'error': 'GitLab URL and PAT are required.'}), 400
-
-    gitlab_base_url = raw_gitlab_url
-    if re.match(r'^https?:\/\/gitlab\.com\/[a-zA-Z0-9_-]+$', raw_gitlab_url):
-        gitlab_base_url = 'https://gitlab.com'
-    elif re.match(r'^https?:\/\/gitlab\.com$', raw_gitlab_url):
-        gitlab_base_url = 'https://gitlab.com'
+    if not project_id or not gitlab_url or not pat:
+        return jsonify({'error': 'Project ID, GitLab URL, and PAT are required.'}), 400
 
     try:
-        gl = gitlab.Gitlab(gitlab_base_url, private_token=pat)
-        gl.auth()
+        gl = get_gitlab_instance(gitlab_url, pat)
+        project = gl.projects.get(project_id) # Get the specific project object
 
-        # --- DEBUGGING PRINTS ---
-        print(f"\n--- Debugging get_branches (Project ID: {project_id}) ---")
-        print(f"GitLab Base URL: {gitlab_base_url}")
-        print(f"PAT provided: {'Yes' if pat else 'No'}")
-        # --- END DEBUGGING PRINTS ---
+        # Fetch all branches for the project
+        branches = project.branches.list(all=True)
 
-        project = gl.projects.get(project_id)
+        branches_data = []
+        for branch in branches:
+            branches_data.append({
+                'name': branch.name,
+                'commit_id': branch.commit['id'] # Get the latest commit ID for the branch
+            })
 
-        # --- DEBUGGING PRINTS ---
-        print(f"Type of object returned by gl.projects.get: {type(project)}")
-        print(f"Does the 'project' object have 'repository' attribute? {'repository' in dir(project)}")
-        if hasattr(project, 'name'): # Check if it has basic project attributes
-            print(f"Project Name: {project.name}")
-        else:
-            print("Project object seems malformed (no name attribute).")
-        # --- END DEBUGGING PRINTS ---
+        return jsonify({'branches': branches_data})
 
-        branches = project.branches.list(all=True) # This is where the error might occur
-
-        branch_names = [b.name for b in branches]
-        return jsonify(branch_names)
-
-    except gitlab.exceptions.GitlabAuthenticationError:
-        return jsonify({'error': 'Authentication failed. Check your PAT.'}), 401
     except gitlab.exceptions.GitlabError as e:
-        print(f"GitLab API Error in get_branches: {e.response_code} - {e.response_content.decode('utf-8')}")
-        return jsonify({'error': f'GitLab API error: {e.response_code}: {e.error_message or e.response_content.decode("utf-8")[:200]}...'}), 500
-    except AttributeError as e:
-        # Catch the specific AttributeError here to provide more context
-        print(f"AttributeError in get_branches: {str(e)}")
-        return jsonify({'error': f"An attribute error occurred in get_branches, likely with the project object: {str(e)}. Please check Flask console for details."}), 500
+        return jsonify({'error': f'GitLab API Error: {e}'}), e.response_code if hasattr(e, 'response_code') else 500
     except Exception as e:
-        print(f"An unexpected error occurred in get_branches: {str(e)}")
-        return jsonify({'error': f'An unexpected error occurred: {str(e)}'}), 500
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
 
-@app.route('/api/compare_branches/<int:project_id>', methods=['POST'])
-def compare_branches(project_id):
-    data = request.json
-    raw_gitlab_url = data.get('gitlab_url')
+@app.route('/compare_branches', methods=['POST'])
+def compare_branches():
+    """
+    Compares two branches of a project and returns the commit differences.
+    """
+    data = request.get_json()
+    project_id = data.get('project_id')
+    source_branch = data.get('source_branch')
+    target_branch = data.get('target_branch')
+    gitlab_url = data.get('gitlab_url')
     pat = data.get('pat')
-    from_branch = data.get('from_branch')
-    to_branch = data.get('to_branch')
 
-    if not raw_gitlab_url or not pat or not from_branch or not to_branch:
-        return jsonify({'error': 'GitLab URL, PAT, from_branch, and to_branch are required.'}), 400
-
-    gitlab_base_url = raw_gitlab_url
-    if re.match(r'^https?:\/\/gitlab\.com\/[a-zA-Z0-9_-]+$', raw_gitlab_url):
-        gitlab_base_url = 'https://gitlab.com'
-    elif re.match(r'^https?:\/\/gitlab\.com$', raw_gitlab_url):
-        gitlab_base_url = 'https://gitlab.com'
+    if not all([project_id, source_branch, target_branch, gitlab_url, pat]):
+        return jsonify({'error': 'All comparison parameters are required.'}), 400
 
     try:
-        gl = gitlab.Gitlab(gitlab_base_url, private_token=pat)
-        gl.auth()
-
-        # --- DEBUGGING PRINTS ---
-        print(f"\n--- Debugging compare_branches (Project ID: {project_id}) ---")
-        print(f"GitLab Base URL: {gitlab_base_url}")
-        print(f"PAT provided: {'Yes' if pat else 'No'}")
-        print(f"From Branch: {from_branch}, To Branch: {to_branch}")
-        # --- END DEBUGGING PRINTS ---
-
+        gl = get_gitlab_instance(gitlab_url, pat)
         project = gl.projects.get(project_id)
 
-        # --- DEBUGGING PRINTS ---
-        print(f"Type of object returned by gl.projects.get: {type(project)}")
-        print(f"Does the 'project' object have 'repository' attribute? {'repository' in dir(project)}")
-        if hasattr(project, 'name'):
-            print(f"Project Name: {project.name}")
-        else:
-            print("Project object seems malformed (no name attribute).")
-        # --- END DEBUGGING PRINTS ---
+        # Use the repository.compare method to get the comparison details
+        # The 'from' and 'to' arguments refer to the branch names or commit SHAs
+        comparison = project.repository_compare(source_branch, target_branch)
 
-        comparison = project.repository.compare(from_branch, to_branch) # This is where the error might occur
+        commits_data = []
+        # The comparison object contains a list of commits that are unique to the 'to' branch
+        # relative to the 'from' branch.
+        for commit in comparison.commits:
+            commits_data.append({
+                'id': commit['id'],
+                'short_id': commit['short_id'],
+                'message': commit['message'],
+                'author_name': commit['author_name'],
+                'authored_date': commit['authored_date']
+            })
+        
+        return jsonify({'commits': commits_data})
 
-        commits_info = [{
-            'id': c['id'],
-            'short_id': c['short_id'],
-            'title': c['title'],
-            'author_name': c['author_name'],
-            'authored_date': c['authored_date']
-        } for c in comparison['commits']]
-
-        diffs_info = [{
-            'old_path': d['old_path'],
-            'new_path': d['new_path'],
-            'diff': d['diff']
-        } for d in comparison['diffs']]
-
-        return jsonify({
-            'commits': commits_info,
-            'diffs': diffs_info
-        })
-
-    except gitlab.exceptions.GitlabAuthenticationError:
-        return jsonify({'error': 'Authentication failed. Check your PAT.'}), 401
     except gitlab.exceptions.GitlabError as e:
-        print(f"GitLab API Error in compare_branches: {e.response_code} - {e.response_content.decode('utf-8')}")
-        return jsonify({'error': f'GitLab API error: {e.response_code}: {e.error_message or e.response_content.decode("utf-8")[:200]}...'}), 500
-    except AttributeError as e:
-        # Catch the specific AttributeError here to provide more context
-        print(f"AttributeError in compare_branches: {str(e)}")
-        return jsonify({'error': f"An attribute error occurred in compare_branches, likely with the project object: {str(e)}. Please check Flask console for details."}), 500
+        return jsonify({'error': f'GitLab API Error: {e}'}), e.response_code if hasattr(e, 'response_code') else 500
     except Exception as e:
-        print(f"An unexpected error occurred in compare_branches: {str(e)}")
-        return jsonify({'error': f'An unexpected error occurred: {str(e)}'}), 500
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
+
+@app.route('/get_diff', methods=['POST'])
+def get_diff():
+    """
+    Fetches the raw diff content for a specific commit ID.
+    """
+    data = request.get_json()
+    project_id = data.get('project_id')
+    commit_id = data.get('commit_id')
+    gitlab_url = data.get('gitlab_url')
+    pat = data.get('pat')
+
+    if not all([project_id, commit_id, gitlab_url, pat]):
+        return jsonify({'error': 'Project ID, Commit ID, GitLab URL, and PAT are required.'}), 400
+
+    try:
+        gl = get_gitlab_instance(gitlab_url, pat)
+        project = gl.projects.get(project_id)
+
+        # Get the commit object
+        commit = project.commits.get(commit_id)
+
+        # Fetch the diff for the commit
+        # The diff() method returns a list of diff objects, each representing a file change.
+        # We need to concatenate the 'diff' attribute from each object.
+        diffs = commit.diff()
+        full_diff_text = ""
+        for d in diffs:
+            # Each diff object has a 'diff' key containing the actual diff string for that file
+            full_diff_text += d.get('diff', '') + "\n" # Add a newline between file diffs
+
+        return jsonify({'diff': full_diff_text})
+
+    except gitlab.exceptions.GitlabError as e:
+        return jsonify({'error': f'GitLab API Error: {e}'}), e.response_code if hasattr(e, 'response_code') else 500
+    except Exception as e:
+        return jsonify({'error': f'An unexpected error occurred: {e}'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
