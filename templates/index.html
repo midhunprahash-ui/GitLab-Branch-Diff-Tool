@@ -660,14 +660,14 @@
                     commitDiffContent.className = 'mt-4 border-t border-gray-200 pt-4 hidden'; // Hidden by default
                     commitDiffContent.id = `commit-diff-content-${commit.hash}`; // Unique ID for content
 
-                    // Render the diff inside this content div
+
                     renderSplitFileDiff(commitDiffContent, commit.diff);
 
 
                     commitCard.appendChild(commitDiffContent);
                     commitsListDisplay.appendChild(commitCard);
 
-                    // Add click listener to toggle visibility
+
                     commitHeader.addEventListener('click', () => {
                         const isHidden = commitDiffContent.classList.contains('hidden');
                         if (isHidden) {

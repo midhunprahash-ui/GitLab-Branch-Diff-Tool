@@ -13,13 +13,10 @@ CORS(app)
 
 CLONE_TIMEOUT_SECONDS = 600
 FETCH_TIMEOUT_SECONDS = 120
-LOG_MAX_COMMITS = 100 # Limit the number of commits to fetch to prevent very large responses
+LOG_MAX_COMMITS = 100000
 
 def construct_git_url_with_pat(repo_url, username, pat):
-    """
-    Constructs the Git URL with username and PAT for authentication.
-    Handles both HTTPS and SSH URLs, converting SSH to HTTPS if a PAT is provided.
-    """
+   
     parsed_url = urlparse(repo_url)
 
     if pat:
@@ -48,7 +45,7 @@ def construct_git_url_with_pat(repo_url, username, pat):
             raise ValueError(f"Unsupported URL scheme for PAT authentication: {parsed_url.scheme}")
     return repo_url
 
-# Helper to run a git command and return stdout
+
 def run_git_command(command_list, cwd=None, timeout=FETCH_TIMEOUT_SECONDS, error_message="Git command failed"):
     try:
         result = subprocess.run(
@@ -149,19 +146,16 @@ def get_commits_and_diffs():
         temp_dir = tempfile.mkdtemp()
         print(f"Created temporary directory: {temp_dir}")
 
-        # Shallow clone to get the repository structure and history
-        # We might need a slightly larger depth or no depth for full history,
-        # but let's try depth 1 first for speed. If commits are missing, increase depth.
-        # For now, let's just clone with no depth for better log history
+        
         print(f"Cloning {git_command_url} into {temp_dir}...")
         run_git_command(
-            ['git', 'clone', git_command_url, temp_dir], # Removed --depth 1 and --no-checkout
+            ['git', 'clone', git_command_url, temp_dir],
             timeout=CLONE_TIMEOUT_SECONDS,
             error_message="Failed to clone repository"
         )
         print(f"Successfully cloned {repo_url} into {temp_dir}.")
 
-        # Fetch both branches to ensure they are available locally for log/diff
+        
         print(f"Fetching branch {branch1} into temporary clone...")
         run_git_command(
             ['git', '-C', temp_dir, 'fetch', 'origin', f'refs/heads/{branch1}:refs/remotes/origin/{branch1}'],
@@ -176,12 +170,9 @@ def get_commits_and_diffs():
         )
         print("Successfully fetched both branches into temporary clone.")
 
-        # Get the list of commits that are on branch2 but not on branch1
-        # This uses '...' for symmetric difference, showing commits unique to each branch
-        # or 'branch1..branch2' for commits in branch2 not in branch1
-        # Let's use `branch1..branch2` to show commits *added* to branch2 relative to branch1
+        
         print(f"Getting commit log for {branch1}..{branch2}...")
-        log_format = "--pretty=format:%H%n%s%n%an%n%ad%n---END-COMMIT---" # Hash, Subject, Author, Date
+        log_format = "--pretty=format:%H%n%s%n%an%n%ad%n---END-COMMIT---" 
         log_output = run_git_command(
             ['git', '-C', temp_dir, 'log', f'origin/{branch1}..origin/{branch2}', f'--max-count={LOG_MAX_COMMITS}', log_format],
             timeout=FETCH_TIMEOUT_SECONDS,
@@ -201,7 +192,7 @@ def get_commits_and_diffs():
             lines = commit_block.strip().split('\n')
             if len(lines) < 4:
                 print(f"Skipping malformed commit block: {commit_block[:50]}...")
-                continue # Malformed block
+                continue 
 
             commit_hash = lines[0]
             commit_subject = lines[1]
@@ -209,15 +200,14 @@ def get_commits_and_diffs():
             commit_date = lines[3]
 
             print(f"Fetching diff for commit {commit_hash}...")
-            # Use 'git show' to get the diff for a specific commit
-            # We want the diff of the changes introduced by this commit
+        
             commit_diff = run_git_command(
                 ['git', '-C', temp_dir, 'show', commit_hash],
                 timeout=FETCH_TIMEOUT_SECONDS,
                 error_message=f"Failed to get diff for commit {commit_hash}"
             )
 
-            # Extract only the diff part, removing commit metadata from 'git show'
+ 
             diff_lines = commit_diff.split('\n')
             diff_content = []
             in_diff_section = False
@@ -232,7 +222,7 @@ def get_commits_and_diffs():
                 "message": commit_subject,
                 "author": commit_author,
                 "date": commit_date,
-                "diff": "\n".join(diff_content) # Store only the actual diff
+                "diff": "\n".join(diff_content) 
             })
         
         print(f"Successfully processed {len(commits_data)} commits.")
