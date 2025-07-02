@@ -1,620 +1,356 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitLab Branch Comparator</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>GitLab Repo & Branch Diff Tool</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            /* Light gray background */
+            padding: 20px;
+            background-color: #f8f9fa;
         }
 
         .container {
-            max-width: 90%;
-            /* Responsive width */
-            margin: 2rem auto;
-            padding: 2rem;
             background-color: #ffffff;
-            border-radius: 0.75rem;
-            /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-primary {
-            background-image: linear-gradient(to right, #4CAF50, #28a745);
-            /* Green gradient */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        h1,
+        h2,
+        h3 {
+            color: #343a40;
+            margin-bottom: 20px;
         }
 
-        .btn-primary:hover {
-            background-image: linear-gradient(to right, #28a745, #4CAF50);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transform: translateY(-1px);
+        .form-group label {
+            font-weight: bold;
         }
 
-        .btn-secondary {
-            background-color: #6b7280;
-            /* Gray */
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            transition: background-color 0.2s ease-in-out;
-        }
-
-        .btn-secondary:hover {
-            background-color: #4b5563;
-        }
-
-        .input-field {
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .error-message {
-            color: #dc2626;
-            /* Red */
-            margin-top: 0.5rem;
-        }
-
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #4CAF50;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-left: 0.5rem;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .project-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .project-item:last-child {
-            border-bottom: none;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            width: 90%;
-            max-width: 600px;
-            position: relative;
-        }
-
-        .modal-content.diff-modal {
-            max-width: 900px;
-            /* Wider for diff view */
-        }
-
-        .modal-close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #6b7280;
-        }
-
-        .diff-view {
-            display: flex;
-            flex-direction: column;
-            /* Stack lines vertically */
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            background-color: #f8f8f8;
-            border-radius: 0.5rem;
-            overflow: auto;
-            /* Enable scrolling for large diffs */
-            border: 1px solid #e5e7eb;
-            margin-top: 1rem;
-            max-height: 70vh;
-            /* Limit height for modal */
-        }
-
-        .diff-line {
-            padding: 0.125rem 0.5rem;
+        pre {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
             white-space: pre-wrap;
-            /* Preserve whitespace and wrap long lines */
-            word-break: break-all;
-            /* Break long words */
-            display: flex;
-            /* For line number and content */
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
         }
 
-        .added {
-            background-color: #e6ffed;
-            /* Light green */
-            color: #22863a;
-            /* Dark green */
+        .diff-container {
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
         }
 
-        .removed {
-            background-color: #ffeef0;
-            /* Light red */
-            color: #b31d28;
-            /* Dark red */
+        .file-path-header {
+            font-weight: bold;
+            cursor: pointer;
+            color: #007bff;
+            /* Bootstrap primary color for links */
+            text-decoration: underline;
+            margin-bottom: 5px;
         }
 
-        .line-number {
-            color: #6a737d;
-            /* Gray */
-            width: 3rem;
-            text-align: right;
-            padding-right: 0.5rem;
-            user-select: none;
-            flex-shrink: 0;
-            /* Prevent shrinking */
-        }
-
-        .diff-line-content {
-            flex-grow: 1;
-        }
-
-        .diff-header-line {
-            background-color: #e2e8f0;
-            /* Light blue-gray for headers */
-            font-weight: 600;
-            color: #4a5568;
-            padding: 0.25rem 0.5rem;
-            border-bottom: 1px solid #cbd5e0;
+        .diff-content {
+            background-color: #f1f3f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
+            border: 1px solid #ced4da;
+            margin-top: 5px;
         }
     </style>
 </head>
 
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body>
     <div class="container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">GitLab Branch Comparator</h1>
+        <h1 class="text-center mb-4">GitLab Repository and Branch Comparison</h1>
 
-        <form id="gitlabForm" class="space-y-4 mb-8">
-            <div>
-                <label for="gitlab_url" class="block text-gray-700 text-sm font-semibold mb-2">GitLab Profile
-                    URL:</label>
-                <input type="url" id="gitlab_url" name="gitlab_url" placeholder="e.g., https://gitlab.com" required
-                    class="input-field">
-            </div>
-            <div>
-                <label for="pat" class="block text-gray-700 text-sm font-semibold mb-2">Personal Access Token
-                    (PAT):</label>
-                <input type="password" id="pat" name="pat" placeholder="Your GitLab PAT" required class="input-field">
-                <p class="text-xs text-gray-500 mt-1">Make sure your PAT has 'read_api' permission.</p>
-            </div>
-            <button type="submit" class="btn-primary w-full flex items-center justify-center">
-                Get Projects
-                <span id="loadingSpinner" class="loading-spinner hidden"></span>
-            </button>
-            <p id="errorMessage" class="error-message text-center hidden"></p>
-        </form>
+        <div class="form-group">
+            <label for="gitlabUrl">GitLab URL (e.g., https://gitlab.organization.com or https://gitlab.com):</label>
+            <input type="text" id="gitlabUrl" class="form-control" value="https://gitlab.com"
+                placeholder="Enter GitLab URL" required>
+        </div>
 
-        <div id="projectsSection" class="hidden">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Projects</h2>
-            <div id="projectsList" class="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-                <!-- Projects will be loaded here -->
-                <p class="text-gray-500 text-center" id="noProjectsMessage">No projects found or loaded yet.</p>
+        <div class="form-group">
+            <label for="pat">Personal Access Token (PAT):</label>
+            <input type="password" id="pat" class="form-control" placeholder="Enter PAT" required>
+        </div>
+
+        <div class="form-group">
+            <label for="username">Username (Optional - for context/PAT owner):</label>
+            <input type="text" id="username" class="form-control" placeholder="Enter Username">
+        </div>
+
+        <button class="btn btn-primary btn-block mb-4" onclick="fetchRepositories()">List Repositories</button>
+
+        <div id="errorMessages" class="alert alert-danger" style="display:none;"></div>
+
+        <div class="form-group">
+            <label for="repositorySelect">Select Repository:</label>
+            <select id="repositorySelect" class="form-control" onchange="fetchBranches()" disabled>
+                <option value="">-- Select a repository --</option>
+            </select>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label for="fromBranchSelect">From Branch:</label>
+                <select id="fromBranchSelect" class="form-control" disabled>
+                    <option value="">-- Select a branch --</option>
+                </select>
+            </div>
+            <div class="col-md-6 form-group">
+                <label for="toBranchSelect">To Branch:</label>
+                <select id="toBranchSelect" class="form-control" disabled>
+                    <option value="">-- Select a branch --</option>
+                </select>
             </div>
         </div>
-    </div>
 
-    <!-- Branch Comparison Modal -->
-    <div id="branchCompareModal" class="modal hidden">
-        <div class="modal-content">
-            <button class="modal-close-btn" onclick="closeModal('branchCompareModal')">&times;</button>
-            <h3 class="text-2xl font-bold mb-4">Compare Branches</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="sourceBranch" class="block text-gray-700 text-sm font-semibold mb-2">Source
-                        Branch:</label>
-                    <select id="sourceBranch" class="input-field"></select>
-                </div>
-                <div>
-                    <label for="targetBranch" class="block text-gray-700 text-sm font-semibold mb-2">Target
-                        Branch:</label>
-                    <select id="targetBranch" class="input-field"></select>
-                </div>
-                <button id="compareBranchesButton" class="btn-primary w-full flex items-center justify-center">
-                    Compare
-                    <span id="compareLoadingSpinner" class="loading-spinner hidden"></span>
-                </button>
-                <p id="compareErrorMessage" class="error-message text-center hidden"></p>
-            </div>
-            <div id="commitList" class="mt-6 border border-gray-200 rounded-lg p-4 max-h-80 overflow-y-auto hidden">
-                <h4 class="text-xl font-semibold text-gray-800 mb-3">Commits Differences</h4>
-                <!-- Commit differences will be listed here -->
-            </div>
+        <button class="btn btn-success btn-block mb-4" onclick="compareBranches()" disabled>Compare Branches</button>
+
+        <div id="comparisonResults" class="mt-4">
+            <h2>Comparison Results</h2>
+            <div id="commitsDiv"></div>
+            <div id="diffsDiv" class="mt-4"></div>
         </div>
     </div>
-
-    <!-- Diff View Modal -->
-    <div id="diffViewModal" class="modal hidden">
-        <div class="modal-content diff-modal">
-            <button class="modal-close-btn" onclick="closeModal('diffViewModal')">&times;</button>
-            <h3 class="text-2xl font-bold mb-4">Code Differences</h3>
-            <div id="diffContent" class="diff-view">
-                <!-- Diff content will be loaded here -->
-            </div>
-        </div>
-    </div>
-
 
     <script>
-        const gitlabForm = document.getElementById('gitlabForm');
-        const gitlabUrlInput = document.getElementById('gitlab_url');
-        const patInput = document.getElementById('pat');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const errorMessage = document.getElementById('errorMessage');
-        const projectsSection = document.getElementById('projectsSection');
-        const projectsList = document.getElementById('projectsList');
-        const noProjectsMessage = document.getElementById('noProjectsMessage');
+        const API_BASE_URL = '/api'; // Flask API base URL
 
-        const branchCompareModal = document.getElementById('branchCompareModal');
-        const sourceBranchSelect = document.getElementById('sourceBranch');
-        const targetBranchSelect = document.getElementById('targetBranch');
-        const compareBranchesButton = document.getElementById('compareBranchesButton');
-        const compareLoadingSpinner = document.getElementById('compareLoadingSpinner');
-        const compareErrorMessage = document.getElementById('compareErrorMessage');
-        const commitList = document.getElementById('commitList');
+        async function fetchRepositories() {
+            const gitlabUrl = document.getElementById('gitlabUrl').value;
+            const pat = document.getElementById('pat').value;
+            const username = document.getElementById('username').value;
+            const errorMessagesDiv = document.getElementById('errorMessages');
+            const repositorySelect = document.getElementById('repositorySelect');
 
-        const diffViewModal = document.getElementById('diffViewModal');
-        const diffContent = document.getElementById('diffContent');
+            errorMessagesDiv.style.display = 'none';
+            errorMessagesDiv.textContent = '';
+            repositorySelect.innerHTML = '<option value="">-- Select a repository --</option>';
+            repositorySelect.disabled = true;
+            document.getElementById('fromBranchSelect').disabled = true;
+            document.getElementById('toBranchSelect').disabled = true;
+            document.querySelector('button[onclick="compareBranches()"]').disabled = true;
+            document.getElementById('commitsDiv').innerHTML = '';
+            document.getElementById('diffsDiv').innerHTML = '';
 
-        let currentProjectId = null; // To store the ID of the project being compared
 
-        // Function to show a modal
-        function showModal(modalId) {
-            document.getElementById(modalId).classList.remove('hidden');
-        }
-
-        // Function to close a modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-            // Clear content when closing diff modal
-            if (modalId === 'diffViewModal') {
-                diffContent.innerHTML = '';
+            if (!gitlabUrl || !pat) {
+                displayError('Please enter both GitLab URL and Personal Access Token.');
+                return;
             }
-            // Clear commit list when closing branch compare modal
-            if (modalId === 'branchCompareModal') {
-                commitList.innerHTML = '<h4 class="text-xl font-semibold text-gray-800 mb-3">Commits Differences</h4>';
-                commitList.classList.add('hidden');
-                sourceBranchSelect.innerHTML = '';
-                targetBranchSelect.innerHTML = '';
-            }
-        }
-
-        // Handle form submission to get projects
-        gitlabForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMessage.classList.add('hidden');
-            loadingSpinner.classList.remove('hidden');
-            projectsSection.classList.add('hidden');
-            projectsList.innerHTML = ''; // Clear previous projects
-            noProjectsMessage.classList.remove('hidden'); // Show "No projects found" initially
-            noProjectsMessage.textContent = 'Loading projects...';
-
-
-            const formData = new FormData(gitlabForm);
 
             try {
-                const response = await fetch('/get_projects', {
+                const response = await fetch(`${API_BASE_URL}/get_repos`, {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gitlab_url: gitlabUrl, pat: pat, username: username })
                 });
 
-                const data = await response.json();
-
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch projects.');
+                    const errorData = await response.json();
+                    throw new Error(`GitLab API error: ${response.status}: ${errorData.error || 'Unknown error'}`);
                 }
 
-                if (data.projects && data.projects.length > 0) {
-                    data.projects.forEach(project => {
-                        const projectDiv = document.createElement('div');
-                        projectDiv.className = 'project-item';
-                        projectDiv.innerHTML = `
-                            <span class="text-gray-800 font-medium">${project.name}</span>
-                            <button class="btn-secondary compare-btn" data-project-id="${project.id}" data-project-name="${project.name}">
-                                Compare Branches
-                            </button>
-                        `;
-                        projectsList.appendChild(projectDiv);
-                    });
-                    noProjectsMessage.classList.add('hidden'); // Hide message if projects found
-                } else {
-                    noProjectsMessage.textContent = 'No projects found for the given PAT or URL.';
+                const repositories = await response.json();
+
+                if (repositories.length === 0) {
+                    displayError('No repositories found for the provided PAT and URL. Check permissions or PAT.');
+                    return;
                 }
-                projectsSection.classList.remove('hidden');
+
+                repositories.forEach(repo => {
+                    const option = document.createElement('option');
+                    option.value = repo.id;
+                    option.textContent = repo.path_with_namespace;
+                    repositorySelect.appendChild(option);
+                });
+                repositorySelect.disabled = false;
 
             } catch (error) {
-                errorMessage.textContent = error.message;
-                errorMessage.classList.remove('hidden');
-                noProjectsMessage.textContent = 'Failed to load projects. Please check your URL and PAT.';
-                noProjectsMessage.classList.remove('hidden');
-            } finally {
-                loadingSpinner.classList.add('hidden');
+                console.error("Fetch repositories error:", error);
+                displayError(`Failed to fetch repositories: ${error.message}`);
             }
-        });
+        }
 
-        // Event delegation for "Compare Branches" buttons
-        projectsList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('compare-btn')) {
-                currentProjectId = e.target.dataset.projectId;
-                const projectName = e.target.dataset.projectName;
+        async function fetchBranches() {
+            const gitlabUrl = document.getElementById('gitlabUrl').value;
+            const pat = document.getElementById('pat').value;
+            const repositoryId = document.getElementById('repositorySelect').value;
+            const fromBranchSelect = document.getElementById('fromBranchSelect');
+            const toBranchSelect = document.getElementById('toBranchSelect');
+            const errorMessagesDiv = document.getElementById('errorMessages');
 
-                // Clear previous options
-                sourceBranchSelect.innerHTML = '';
-                targetBranchSelect.innerHTML = '';
-                commitList.innerHTML = '<h4 class="text-xl font-semibold text-gray-800 mb-3">Commits Differences</h4>';
-                commitList.classList.add('hidden');
-                compareErrorMessage.classList.add('hidden');
+            errorMessagesDiv.style.display = 'none';
+            errorMessagesDiv.textContent = '';
+            fromBranchSelect.innerHTML = '<option value="">-- Select a branch --</option>';
+            toBranchSelect.innerHTML = '<option value="">-- Select a branch --</option>';
+            fromBranchSelect.disabled = true;
+            toBranchSelect.disabled = true;
+            document.querySelector('button[onclick="compareBranches()"]').disabled = true;
+            document.getElementById('commitsDiv').innerHTML = '';
+            document.getElementById('diffsDiv').innerHTML = '';
 
-                showModal('branchCompareModal');
-                compareLoadingSpinner.classList.remove('hidden');
-                compareBranchesButton.disabled = true; // Disable compare button while loading branches
+            if (!repositoryId) {
+                return; // No repository selected
+            }
 
-                try {
-                    const gitlabUrl = gitlabUrlInput.value;
-                    const pat = patInput.value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_branches/${repositoryId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gitlab_url: gitlabUrl, pat: pat })
+                });
 
-                    const response = await fetch('/get_branches', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            project_id: currentProjectId,
-                            gitlab_url: gitlabUrl,
-                            pat: pat
-                        })
-                    });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`GitLab API error: ${response.status}: ${errorData.error || 'Unknown error'}`);
+                }
 
-                    const data = await response.json();
+                const branches = await response.json();
 
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Failed to fetch branches.');
-                    }
+                if (branches.length === 0) {
+                    displayError('No branches found for this repository.');
+                    return;
+                }
 
-                    if (data.branches && data.branches.length > 0) {
-                        data.branches.forEach(branch => {
-                            const option1 = document.createElement('option');
-                            option1.value = branch.name;
-                            option1.textContent = branch.name;
-                            sourceBranchSelect.appendChild(option1);
+                branches.forEach(branch => {
+                    const option1 = document.createElement('option');
+                    option1.value = branch;
+                    option1.textContent = branch;
+                    fromBranchSelect.appendChild(option1);
 
-                            const option2 = document.createElement('option');
-                            option2.value = branch.name;
-                            option2.textContent = branch.name;
-                            targetBranchSelect.appendChild(option2);
-                        });
-                        // Select different default branches if possible
-                        if (data.branches.length >= 2) {
-                            sourceBranchSelect.value = data.branches[0].name;
-                            targetBranchSelect.value = data.branches[1].name;
-                        } else if (data.branches.length === 1) {
-                            sourceBranchSelect.value = data.branches[0].name;
-                            targetBranchSelect.value = data.branches[0].name; // Set both to the same if only one
+                    const option2 = document.createElement('option');
+                    option2.value = branch;
+                    option2.textContent = branch;
+                    toBranchSelect.appendChild(option2);
+                });
+                fromBranchSelect.disabled = false;
+                toBranchSelect.disabled = false;
+                document.querySelector('button[onclick="compareBranches()"]').disabled = false;
+
+
+            } catch (error) {
+                console.error("Fetch branches error:", error);
+                displayError(`Failed to fetch branches: ${error.message}`);
+            }
+        }
+
+        async function compareBranches() {
+            const gitlabUrl = document.getElementById('gitlabUrl').value;
+            const pat = document.getElementById('pat').value;
+            const repositoryId = document.getElementById('repositorySelect').value;
+            const fromBranch = document.getElementById('fromBranchSelect').value;
+            const toBranch = document.getElementById('toBranchSelect').value;
+            const errorMessagesDiv = document.getElementById('errorMessages');
+
+            errorMessagesDiv.style.display = 'none';
+            errorMessagesDiv.textContent = '';
+            document.getElementById('commitsDiv').innerHTML = '';
+            document.getElementById('diffsDiv').innerHTML = '';
+
+            if (!repositoryId || !fromBranch || !toBranch) {
+                displayError('Please select a repository and two branches to compare.');
+                return;
+            }
+
+            if (fromBranch === toBranch) {
+                displayError('Please select two different branches to compare.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/compare_branches/${repositoryId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gitlab_url: gitlabUrl, pat: pat, from_branch: fromBranch, to_branch: toBranch })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`GitLab API error: ${response.status}: ${errorData.error || 'Unknown error'}`);
+                }
+
+                const comparison = await response.json();
+                displayComparison(comparison);
+
+            } catch (error) {
+                console.error("Error during comparison:", error);
+                displayError(`Failed to compare branches: ${error.message}`);
+            }
+        }
+
+        function displayComparison(comparison) {
+            const commitsDiv = document.getElementById('commitsDiv');
+            const diffsDiv = document.getElementById('diffsDiv');
+
+            commitsDiv.innerHTML = '<h3>Commits</h3>';
+            if (comparison.commits && comparison.commits.length > 0) {
+                const ul = document.createElement('ul');
+                ul.className = 'list-group';
+                comparison.commits.forEach(commit => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.innerHTML = `<strong>${commit.title}</strong><br>
+                                    <small>ID: ${commit.short_id} by ${commit.author_name} on ${new Date(commit.authored_date).toLocaleString()}</small>`;
+                    ul.appendChild(li);
+                });
+                commitsDiv.appendChild(ul);
+            } else {
+                commitsDiv.innerHTML += '<p>No commits found between the selected branches.</p>';
+            }
+
+            // Display diffs with toggle functionality
+            diffsDiv.innerHTML = '<h3>File Changes (Diffs)</h3>';
+            if (comparison.diffs && comparison.diffs.length > 0) {
+                comparison.diffs.forEach(diff => {
+                    const diffContainer = document.createElement('div');
+                    diffContainer.className = 'diff-container';
+
+                    const filePathHeader = document.createElement('div');
+                    filePathHeader.className = 'file-path-header';
+                    filePathHeader.innerHTML = `<strong>${diff.old_path} &rarr; ${diff.new_path}</strong>`;
+
+                    const diffContentPre = document.createElement('pre');
+                    diffContentPre.className = 'diff-content';
+                    diffContentPre.textContent = diff.diff;
+                    diffContentPre.style.display = 'none'; // Hidden by default
+
+                    // Toggle visibility on click
+                    filePathHeader.onclick = () => {
+                        if (diffContentPre.style.display === 'none') {
+                            diffContentPre.style.display = 'block';
+                        } else {
+                            diffContentPre.style.display = 'none';
                         }
-                    } else {
-                        compareErrorMessage.textContent = 'No branches found for this project.';
-                        compareErrorMessage.classList.remove('hidden');
-                    }
+                    };
 
-                } catch (error) {
-                    compareErrorMessage.textContent = error.message;
-                    compareErrorMessage.classList.remove('hidden');
-                } finally {
-                    compareLoadingSpinner.classList.add('hidden');
-                    compareBranchesButton.disabled = false; // Re-enable compare button
-                }
-            }
-        });
-
-        // Handle branch comparison
-        compareBranchesButton.addEventListener('click', async () => {
-            const sourceBranch = sourceBranchSelect.value;
-            const targetBranch = targetBranchSelect.value;
-
-            if (!sourceBranch || !targetBranch) {
-                compareErrorMessage.textContent = 'Please select both source and target branches.';
-                compareErrorMessage.classList.remove('hidden');
-                return;
-            }
-
-            if (sourceBranch === targetBranch) {
-                compareErrorMessage.textContent = 'Source and target branches cannot be the same.';
-                compareErrorMessage.classList.remove('hidden');
-                return;
-            }
-
-            compareErrorMessage.classList.add('hidden');
-            compareLoadingSpinner.classList.remove('hidden');
-            commitList.innerHTML = '<h4 class="text-xl font-semibold text-gray-800 mb-3">Commits Differences</h4>'; // Clear previous commits
-            commitList.classList.add('hidden');
-
-            try {
-                const gitlabUrl = gitlabUrlInput.value;
-                const pat = patInput.value;
-
-                const response = await fetch('/compare_branches', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        project_id: currentProjectId,
-                        source_branch: sourceBranch,
-                        target_branch: targetBranch,
-                        gitlab_url: gitlabUrl,
-                        pat: pat
-                    })
+                    diffContainer.appendChild(filePathHeader);
+                    diffContainer.appendChild(diffContentPre);
+                    diffsDiv.appendChild(diffContainer);
                 });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to compare branches.');
-                }
-
-                if (data.commits && data.commits.length > 0) {
-                    data.commits.forEach(commit => {
-                        const commitDiv = document.createElement('div');
-                        commitDiv.className = 'border-b border-gray-200 py-2 last:border-b-0';
-                        commitDiv.innerHTML = `
-                            <p class="text-gray-700">
-                                <span class="font-mono text-sm text-gray-600">${commit.short_id}</span> -
-                                <span class="font-medium">${commit.message.split('\n')[0]}</span> by
-                                <span class="text-gray-600">${commit.author_name}</span>
-                            </p>
-                            <button class="btn-secondary mt-2 reveal-diff-btn" data-commit-id="${commit.id}">
-                                Reveal Edits
-                            </button>
-                        `;
-                        commitList.appendChild(commitDiv);
-                    });
-                    commitList.classList.remove('hidden');
-                } else {
-                    commitList.innerHTML = '<p class="text-gray-500 text-center">No differences found between these branches.</p>';
-                    commitList.classList.remove('hidden');
-                }
-
-            } catch (error) {
-                compareErrorMessage.textContent = error.message;
-                compareErrorMessage.classList.remove('hidden');
-            } finally {
-                compareLoadingSpinner.classList.add('hidden');
+            } else {
+                diffsDiv.innerHTML += '<p>No file changes found between the selected branches.</p>';
             }
-        });
-
-        // Event delegation for "Reveal Edits" buttons
-        commitList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('reveal-diff-btn')) {
-                const commitId = e.target.dataset.commitId;
-                showModal('diffViewModal');
-                diffContent.innerHTML = '<p class="text-center text-gray-500">Loading diff...</p>'; // Loading message
-
-                try {
-                    const gitlabUrl = gitlabUrlInput.value;
-                    const pat = patInput.value;
-
-                    const response = await fetch('/get_diff', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            project_id: currentProjectId,
-                            commit_id: commitId,
-                            gitlab_url: gitlabUrl,
-                            pat: pat
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Failed to fetch diff.');
-                    }
-
-                    if (data.diff) {
-                        renderDiff(data.diff);
-                    } else {
-                        diffContent.innerHTML = '<p class="text-center text-gray-500">No diff content available for this commit.</p>';
-                    }
-
-                } catch (error) {
-                    diffContent.innerHTML = `<p class="text-center text-red-500">Error loading diff: ${error.message}</p>`;
-                }
-            }
-        });
-
-        // Function to render the diff content
-        function renderDiff(diffText) {
-            diffContent.innerHTML = ''; // Clear previous diff
-            const lines = diffText.split('\n');
-
-            lines.forEach(line => {
-                const lineWrapper = document.createElement('div');
-
-                if (line.startsWith('diff --git') || line.startsWith('index') || line.startsWith('--- a/') || line.startsWith('+++ b/')) {
-                    // Diff headers
-                    lineWrapper.className = 'diff-header-line';
-                    lineWrapper.textContent = line;
-                } else {
-                    lineWrapper.className = 'diff-line';
-                    const lineNumberSpan = document.createElement('span');
-                    lineNumberSpan.className = 'line-number';
-                    const lineContentSpan = document.createElement('span');
-                    lineContentSpan.className = 'diff-line-content';
-
-                    if (line.startsWith('+')) {
-                        lineContentSpan.classList.add('added');
-                        lineContentSpan.textContent = line;
-                    } else if (line.startsWith('-')) {
-                        lineContentSpan.classList.add('removed');
-                        lineContentSpan.textContent = line;
-                    } else {
-                        lineContentSpan.textContent = line;
-                    }
-                    // Line numbers are tricky with unified diffs, often they are not sequential
-                    // and depend on the context. For simplicity, we won't show line numbers
-                    // for context lines in this basic diff viewer, or you could implement
-                    // a more complex diff parsing library on the frontend.
-                    // For now, just show content.
-                    lineWrapper.appendChild(lineNumberSpan); // Empty for context lines
-                    lineWrapper.appendChild(lineContentSpan);
-                }
-                diffContent.appendChild(lineWrapper);
-            });
         }
+
+        function displayError(message) {
+            const errorMessagesDiv = document.getElementById('errorMessages');
+            errorMessagesDiv.textContent = message;
+            errorMessagesDiv.style.display = 'block';
+        }
+
     </script>
 </body>
 
