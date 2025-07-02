@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=2.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitLab Branch Diff Tool</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
             font-family: 'Inter', sans-serif;
         }
 
-
+        /* Diff viewer styles remain the same */
         .diff-line-added {
             background-color: #dcfce7;
             /* green-100 */
@@ -148,10 +148,8 @@
             GitLab Branch Diff Tool
         </h1>
 
-
-        <div class="mb-6">
+        <div class="mb-4">
             <label for="repo-url" class="block text-gray-700 text-sm font-medium mb-2">
-
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="inline-block mr-1 h-4 w-4">
@@ -160,14 +158,29 @@
                 </svg>
                 GitLab Repository URL
             </label>
+            <input type="text" id="repo-url"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="e.g., https://gitlab.com/your-org/your-repo.git" />
+        </div>
+
+        <div class="mb-6">
+            <label for="pat" class="block text-gray-700 text-sm font-medium mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="inline-block mr-1 h-4 w-4">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Personal Access Token (PAT) <span class="text-gray-500 text-xs">(Optional, required for private
+                    repos)</span>
+            </label>
             <div class="flex gap-2">
-                <input type="text" id="repo-url"
+                <input type="password" id="pat"
                     class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                    placeholder="e.g., https://gitlab.com/your-org/your-repo.git" />
+                    placeholder="Enter your GitLab PAT" />
                 <button id="fetch-branches-btn"
                     class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300 ease-in-out flex items-center justify-center">
                     <span id="fetch-branches-spinner" class="hidden animate-spin mr-2 h-5 w-5">
-
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2v4"></path>
@@ -181,7 +194,6 @@
                         </svg>
                     </span>
                     <span id="fetch-branches-text">
-
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="mr-2 h-5 w-5">
@@ -280,6 +292,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const repoUrlInput = document.getElementById('repo-url');
+            const patInput = document.getElementById('pat'); // New PAT input field
 
             const fetchBranchesBtn = document.getElementById('fetch-branches-btn');
             const fetchBranchesSpinner = document.getElementById('fetch-branches-spinner');
@@ -343,6 +356,13 @@
              */
             const renderSplitDiff = (rawDiff) => {
                 diffDisplayDiv.innerHTML = '';
+                // Handle empty diff case first
+                if (!rawDiff || rawDiff.trim() === '') {
+                    diffDisplayDiv.innerHTML = '<div class="p-4 bg-blue-100 text-blue-700 rounded-lg text-center">No differences found between the selected branches.</div>';
+                    diffOutputContainer.classList.remove('hidden');
+                    return;
+                }
+
                 const lines = rawDiff.split('\n');
                 let currentFileDiff = [];
                 let inDiffBlock = false;
@@ -351,7 +371,6 @@
                     // Start of a new file diff
                     if (line.startsWith('diff --git')) {
                         if (inDiffBlock) {
-
                             appendFileDiff(currentFileDiff);
                         }
                         currentFileDiff = [line];
@@ -360,7 +379,6 @@
                         currentFileDiff.push(line);
                     }
                 });
-
 
                 if (inDiffBlock) {
                     appendFileDiff(currentFileDiff);
@@ -503,7 +521,7 @@
             fetchBranchesBtn.addEventListener('click', async () => {
                 hideError();
                 const repoUrl = repoUrlInput.value.trim();
-
+                const pat = patInput.value.trim(); // Get PAT value
 
                 if (!repoUrl) {
                     showError('Please enter a GitLab Repository URL first.');
@@ -524,7 +542,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ repoUrl: repoUrl }),
+                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat }), // Send PAT
                     });
 
                     const data = await response.json();
@@ -532,7 +550,6 @@
                     if (response.ok) {
                         populateDropdown(branch1Select, data.branches);
                         populateDropdown(branch2Select, data.branches);
-
 
                         if (data.branches.length > 0) {
                             branch1Select.value = data.branches[0];
@@ -563,7 +580,7 @@
             compareBranchesBtn.addEventListener('click', async () => {
                 hideError();
                 const repoUrl = repoUrlInput.value.trim();
-
+                const pat = patInput.value.trim(); // Get PAT value
                 const branch1 = branch1Select.value;
                 const branch2 = branch2Select.value;
 
@@ -588,8 +605,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-
-                        body: JSON.stringify({ repoUrl: repoUrl, branch1: branch1, branch2: branch2 }),
+                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat, branch1: branch1, branch2: branch2 }), // Send PAT
                     });
 
                     const data = await response.json();
