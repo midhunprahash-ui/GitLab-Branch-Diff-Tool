@@ -91,14 +91,12 @@
             flex: 1;
             padding: 0.5rem;
             overflow-x: auto;
-
             white-space: pre;
 
         }
 
         .diff-pane-left {
             border-right: 1px solid #e5e7eb;
-
             background-color: #f9fafb;
 
         }
@@ -283,17 +281,21 @@
 
 
     <div id="diff-output-container" class="w-full max-w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">Comparison Results</h2>
-        <div id="diff-display" class="w-full">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">Commits Comparison Results (<span
+                id="branch-display-names"></span>)</h2>
 
+        <div id="commits-list-display">
+        </div>
+
+        <div id="no-commits-message" class="hidden mt-4 p-3 bg-blue-100 text-blue-700 rounded-lg text-center">
+            No new commits found between these branches.
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const repoUrlInput = document.getElementById('repo-url');
-            const patInput = document.getElementById('pat'); // New PAT input field
-
+            const patInput = document.getElementById('pat');
             const fetchBranchesBtn = document.getElementById('fetch-branches-btn');
             const fetchBranchesSpinner = document.getElementById('fetch-branches-spinner');
             const fetchBranchesText = document.getElementById('fetch-branches-text');
@@ -303,29 +305,22 @@
             const compareSpinner = document.getElementById('compare-spinner');
             const compareText = document.getElementById('compare-text');
             const errorMessageDiv = document.getElementById('error-message');
-            const diffOutputContainer = document.getElementById('diff-output-container');
-            const diffDisplayDiv = document.getElementById('diff-display');
 
-            /**
-             * Displays an error message.
-             * @param {string} message - The error message to display.
-             */
+            const diffOutputContainer = document.getElementById('diff-output-container');
+            const branchDisplayNames = document.getElementById('branch-display-names');
+            const commitsListDisplay = document.getElementById('commits-list-display');
+            const noCommitsMessage = document.getElementById('no-commits-message');
+
             const showError = (message) => {
                 errorMessageDiv.textContent = message;
                 errorMessageDiv.classList.remove('hidden');
             };
-
 
             const hideError = () => {
                 errorMessageDiv.classList.add('hidden');
                 errorMessageDiv.textContent = '';
             };
 
-            /**
-             * Populates a select dropdown with an array of options.
-             * @param {HTMLSelectElement} selectElement - The select element to populate.
-             * @param {string[]} options - An array of strings for the option values and text.
-             */
             const populateDropdown = (selectElement, options) => {
                 selectElement.innerHTML = '';
                 if (options.length === 0) {
@@ -351,15 +346,13 @@
             };
 
             /**
-             * Renders the diff output in a split view.
-             * @param {string} rawDiff - The raw git diff string.
+             * Renders a single file diff in a split view format.
+             * @param {HTMLElement} parentElement - The element to append the diff content to.
+             * @param {string} rawDiff - The raw git diff string for a file.
              */
-            const renderSplitDiff = (rawDiff) => {
-                diffDisplayDiv.innerHTML = '';
-                // Handle empty diff case first
+            const renderSplitFileDiff = (parentElement, rawDiff) => {
                 if (!rawDiff || rawDiff.trim() === '') {
-                    diffDisplayDiv.innerHTML = '<div class="p-4 bg-blue-100 text-blue-700 rounded-lg text-center">No differences found between the selected branches.</div>';
-                    diffOutputContainer.classList.remove('hidden');
+                    parentElement.innerHTML = '<div class="p-2 bg-blue-50 text-blue-600 rounded-lg text-center text-sm">No changes for this file in this commit.</div>';
                     return;
                 }
 
@@ -368,10 +361,9 @@
                 let inDiffBlock = false;
 
                 lines.forEach(line => {
-                    // Start of a new file diff
                     if (line.startsWith('diff --git')) {
                         if (inDiffBlock) {
-                            appendFileDiff(currentFileDiff);
+                            appendFileDiffSegment(parentElement, currentFileDiff);
                         }
                         currentFileDiff = [line];
                         inDiffBlock = true;
@@ -381,26 +373,23 @@
                 });
 
                 if (inDiffBlock) {
-                    appendFileDiff(currentFileDiff);
+                    appendFileDiffSegment(parentElement, currentFileDiff);
                 }
-
-                diffOutputContainer.classList.remove('hidden');
             };
 
-            const appendFileDiff = (fileLines) => {
+            const appendFileDiffSegment = (parentElement, fileLines) => {
                 if (fileLines.length === 0) return;
 
                 const fileNameLine = fileLines.find(line => line.startsWith('--- a/'));
                 const fileName = fileNameLine ? fileNameLine.substring(6).split('\t')[0] : 'Unknown File';
 
-                const fileHeader = document.createElement('h3');
-                fileHeader.className = 'text-lg font-semibold text-gray-800 mt-6 mb-2 flex items-center';
-
-                fileHeader.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-blue-500"><path d="M4 22h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8a2 2 0 0 1-2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path></svg>${fileName}`;
-                diffDisplayDiv.appendChild(fileHeader);
+                const fileHeader = document.createElement('h4');
+                fileHeader.className = 'text-md font-semibold text-gray-700 mt-4 mb-2 flex items-center';
+                fileHeader.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 text-blue-400"><path d="M4 22h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8a2 2 0 0 1-2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path></svg>${fileName}`;
+                parentElement.appendChild(fileHeader);
 
                 const splitContainer = document.createElement('div');
-                splitContainer.className = 'diff-split-container mb-4';
+                splitContainer.className = 'diff-split-container mb-3';
 
                 const leftPane = document.createElement('div');
                 leftPane.className = 'diff-pane diff-pane-left';
@@ -429,7 +418,6 @@
                     contentRight.className = 'diff-line-content';
 
                     if (line.startsWith('@@')) {
-
                         const hunkMatch = line.match(/@@ -(\d+)(,\d+)? \+(\d+)(,\d+)? @@/);
                         if (hunkMatch) {
                             currentHunkStartLeft = parseInt(hunkMatch[1], 10);
@@ -444,7 +432,6 @@
                         rightPane.appendChild(hunkHeaderDiv);
                         return;
                     } else if (line.startsWith('--- a/') || line.startsWith('+++ b/')) {
-
                         const infoDiv = document.createElement('div');
                         infoDiv.className = 'diff-info col-span-2 w-full';
                         infoDiv.textContent = line;
@@ -452,7 +439,6 @@
                         rightPane.appendChild(infoDiv);
                         return;
                     } else if (line.startsWith('diff --git') || line.startsWith('index ')) {
-
                         const headerDiv = document.createElement('div');
                         headerDiv.className = 'diff-header col-span-2 w-full';
                         headerDiv.textContent = line;
@@ -462,7 +448,6 @@
                     }
 
                     if (line.startsWith('-')) {
-
                         lineNumberLeft.textContent = leftLineNum;
                         contentLeft.textContent = line;
                         lineDivLeft.classList.add('diff-line-deleted');
@@ -470,14 +455,12 @@
                         lineDivLeft.appendChild(contentLeft);
                         leftPane.appendChild(lineDivLeft);
 
-
                         const emptyLineRight = document.createElement('div');
                         emptyLineRight.className = 'diff-line';
                         emptyLineRight.innerHTML = `<span class="diff-line-number"></span><span class="diff-line-content"></span>`;
                         rightPane.appendChild(emptyLineRight);
                         leftLineNum++;
                     } else if (line.startsWith('+')) {
-
                         lineNumberRight.textContent = rightLineNum;
                         contentRight.textContent = line;
                         lineDivRight.classList.add('diff-line-added');
@@ -485,14 +468,12 @@
                         lineDivRight.appendChild(contentRight);
                         rightPane.appendChild(lineDivRight);
 
-
                         const emptyLineLeft = document.createElement('div');
                         emptyLineLeft.className = 'diff-line';
                         emptyLineLeft.innerHTML = `<span class="diff-line-number"></span><span class="diff-line-content"></span>`;
                         leftPane.appendChild(emptyLineLeft);
                         rightLineNum++;
                     } else {
-
                         lineNumberLeft.textContent = leftLineNum;
                         contentLeft.textContent = line;
                         lineDivLeft.classList.add('diff-line-common');
@@ -514,14 +495,14 @@
 
                 splitContainer.appendChild(leftPane);
                 splitContainer.appendChild(rightPane);
-                diffDisplayDiv.appendChild(splitContainer);
+                parentElement.appendChild(splitContainer);
             };
 
 
             fetchBranchesBtn.addEventListener('click', async () => {
                 hideError();
                 const repoUrl = repoUrlInput.value.trim();
-                const pat = patInput.value.trim(); // Get PAT value
+                const pat = patInput.value.trim();
 
                 if (!repoUrl) {
                     showError('Please enter a GitLab Repository URL first.');
@@ -534,7 +515,9 @@
                 branch1Select.disabled = true;
                 branch2Select.disabled = true;
                 compareBranchesBtn.disabled = true;
-                diffOutputContainer.classList.add('hidden');
+                diffOutputContainer.classList.add('hidden'); // Hide entire diff container on new fetch
+                commitsListDisplay.innerHTML = ''; // Clear previous commits
+                noCommitsMessage.classList.add('hidden');
 
                 try {
                     const response = await fetch('/api/branches', {
@@ -542,7 +525,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat }), // Send PAT
+                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat }),
                     });
 
                     const data = await response.json();
@@ -580,7 +563,7 @@
             compareBranchesBtn.addEventListener('click', async () => {
                 hideError();
                 const repoUrl = repoUrlInput.value.trim();
-                const pat = patInput.value.trim(); // Get PAT value
+                const pat = patInput.value.trim();
                 const branch1 = branch1Select.value;
                 const branch2 = branch2Select.value;
 
@@ -597,33 +580,106 @@
                 compareBranchesBtn.disabled = true;
                 compareSpinner.classList.remove('hidden');
                 compareText.classList.add('hidden');
-                diffOutputContainer.classList.add('hidden');
+                diffOutputContainer.classList.add('hidden'); // Hide previous diff output
+                commitsListDisplay.innerHTML = ''; // Clear previous commits
+                noCommitsMessage.classList.add('hidden');
+
 
                 try {
-                    const response = await fetch('/api/diff', {
+                    // Changed endpoint to /api/commits_and_diffs
+                    const response = await fetch('/api/commits_and_diffs', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat, branch1: branch1, branch2: branch2 }), // Send PAT
+                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat, branch1: branch1, branch2: branch2 }),
                     });
 
                     const data = await response.json();
 
                     if (response.ok) {
-                        renderSplitDiff(data.diff);
+                        branchDisplayNames.textContent = `${branch1} ... ${branch2}`;
+                        diffOutputContainer.classList.remove('hidden');
+
+                        if (data.commits && data.commits.length > 0) {
+                            renderCommitsList(data.commits);
+                        } else {
+                            noCommitsMessage.classList.remove('hidden');
+                        }
+
                     } else {
-                        showError(data.error || 'Failed to fetch diff.');
+                        showError(data.error || 'Failed to fetch commits and diffs.');
                     }
                 } catch (error) {
-                    console.error('Error fetching diff:', error);
-                    showError('Network error or server unavailable. Could not fetch diff.');
+                    console.error('Error fetching commits and diffs:', error);
+                    showError('Network error or server unavailable. Could not fetch commits and diffs.');
                 } finally {
                     compareBranchesBtn.disabled = false;
                     compareSpinner.classList.add('hidden');
                     compareText.classList.remove('hidden');
                 }
             });
+
+            /**
+             * Renders the list of commits, each with a toggleable diff.
+             * @param {Array<Object>} commits - Array of commit objects from the backend.
+             */
+            const renderCommitsList = (commits) => {
+                commitsListDisplay.innerHTML = ''; // Clear previous content
+
+                commits.forEach(commit => {
+                    const commitCard = document.createElement('div');
+                    commitCard.className = 'bg-gray-50 rounded-lg shadow-sm border border-gray-200 p-4 mb-4';
+
+                    const commitHeader = document.createElement('div');
+                    commitHeader.className = 'flex justify-between items-center cursor-pointer';
+                    commitHeader.id = `commit-header-${commit.hash}`; // Unique ID for header
+
+                    const commitInfo = document.createElement('div');
+                    commitInfo.className = 'flex-grow';
+                    commitInfo.innerHTML = `
+                        <p class="text-sm text-gray-500 mb-1">
+                            <span class="font-mono text-gray-600">${commit.hash.substring(0, 7)}</span> by ${commit.author} on ${new Date(commit.date).toLocaleDateString()} ${new Date(commit.date).toLocaleTimeString()}
+                        </p>
+                        <p class="text-lg font-medium text-gray-800">${commit.message}</p>
+                    `;
+
+                    const dropdownArrow = document.createElement('span');
+                    dropdownArrow.className = 'text-gray-500 transform transition-transform duration-200';
+                    dropdownArrow.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    `;
+
+                    commitHeader.appendChild(commitInfo);
+                    commitHeader.appendChild(dropdownArrow);
+                    commitCard.appendChild(commitHeader);
+
+                    const commitDiffContent = document.createElement('div');
+                    commitDiffContent.className = 'mt-4 border-t border-gray-200 pt-4 hidden'; // Hidden by default
+                    commitDiffContent.id = `commit-diff-content-${commit.hash}`; // Unique ID for content
+
+                    // Render the diff inside this content div
+                    renderSplitFileDiff(commitDiffContent, commit.diff);
+
+
+                    commitCard.appendChild(commitDiffContent);
+                    commitsListDisplay.appendChild(commitCard);
+
+                    // Add click listener to toggle visibility
+                    commitHeader.addEventListener('click', () => {
+                        const isHidden = commitDiffContent.classList.contains('hidden');
+                        if (isHidden) {
+                            commitDiffContent.classList.remove('hidden');
+                            dropdownArrow.classList.add('rotate-180');
+                        } else {
+                            commitDiffContent.classList.add('hidden');
+                            dropdownArrow.classList.remove('rotate-180');
+                        }
+                    });
+                });
+            };
 
 
             const updateCompareButtonState = () => {
