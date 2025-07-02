@@ -1,215 +1,211 @@
-
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+import gitlab
 import os
-import subprocess
-import shutil 
-import re     
-import sys   
-from urllib.parse import urlparse, urlunparse
-from configparser import ConfigParser
 
+# Initialize Flask app, specifying the templates folder
 app = Flask(__name__)
-CORS(app) 
+CORS(app) # Enable CORS for all origins
 
-
-
-REPO_BASE_DIR = os.path.join(os.getcwd(), 'cloned_repos')
-parser = ConfigParser()
-parser.read(".config")
-
-
-os.makedirs(REPO_BASE_DIR, exist_ok=True)
-
-
-CLONE_TIMEOUT_SECONDS = 600
-
-FETCH_TIMEOUT_SECONDS = 120 
-
-def sanitize_repo_name(url):
-    
-    parsed_url = urlparse(url)
-   
-    if parsed_url.netloc:
-        name = parsed_url.netloc + parsed_url.path
-    else: 
-        name = url.replace('git@', '').replace(':', '/')
-
-    name = name.replace('.git', '')
-
-    name = re.sub(r'[^a-zA-Z0-9_-]', '-', name)
-  
-    name = re.sub(r'-+', '-', name)
- 
-    name = name.strip('-')
-    
-    if not name or not re.search(r'[a-zA-Z0-9]', name):
-        raise ValueError("Invalid repository URL provided, cannot create a safe directory name.")
-    return name
-
-def get_repo_path(repo_url):
-   
+def get_gitlab_client(gitlab_url, personal_access_token):
+    """Initializes and returns a GitLab client."""
+    if not personal_access_token:
+        app.logger.error("GitLab Personal Access Token is missing.")
+        return None
     try:
-        repo_name = sanitize_repo_name(repo_url)
-        return os.path.join(REPO_BASE_DIR, repo_name)
-    except ValueError as e:
-        raise e
-
-def clone_or_fetch_repo(repo_url): 
-   
-    repo_path = "" 
-
-
-    try:
-        repo_path = get_repo_path(repo_url)
-    except ValueError as e:
-        raise Exception(f"Invalid repository URL: {e}")
-
- 
-    git_command_url = repo_url
-
-    if not os.path.exists(repo_path):
-        print(f"Attempting to clone {repo_url} into {repo_path} (Timeout: {CLONE_TIMEOUT_SECONDS}s)...")
-        try:
-            subprocess.run(
-                ['git', 'clone', git_command_url, repo_path],
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=CLONE_TIMEOUT_SECONDS
-            )
-            print(f"Successfully cloned {repo_url}")
-        except subprocess.TimeoutExpired:
-            if os.path.exists(repo_path):
-                shutil.rmtree(repo_path, ignore_errors=True)
-            raise Exception(f"Git clone timed out after {CLONE_TIMEOUT_SECONDS} seconds for {repo_url}. "
-                            "The repository might be too large or your network too slow.")
-        except subprocess.CalledProcessError as e:
-            error_output = e.stderr.strip()
-            print(f"Error cloning repo: {error_output}")
-            if "authentication" in error_output.lower() or "fatal: could not read Username" in error_output.lower():
-                raise Exception(f"Authentication required or failed for {repo_url}. "
-                                "Please ensure the repository is public or credentials are configured (e.g., SSH keys).")
-            elif "repository not found" in error_output.lower() or "not a git repository" in error_output.lower():
-                raise Exception(f"Repository not found or URL is incorrect: {repo_url}.")
-            else:
-                raise Exception(f"Failed to clone repository: {error_output}")
-        except Exception as e:
-            print(f"An unexpected error occurred during cloning: {e}")
-            raise Exception(f"An unexpected error occurred during cloning: {str(e)}")
-    else:
-        print(f"Repository {repo_url} already exists. Fetching latest changes in {repo_path} (Timeout: {FETCH_TIMEOUT_SECONDS}s)...")
-        try:
-            subprocess.run(
-                ['git', '-C', repo_path, 'fetch', 'origin'],
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=FETCH_TIMEOUT_SECONDS
-            )
-            print(f"Successfully fetched {repo_url}")
-        except subprocess.TimeoutExpired:
-            raise Exception(f"Git fetch timed out after {FETCH_TIMEOUT_SECONDS} seconds for {repo_url}. "
-                            "Network might be slow or repository has many new changes.")
-        except subprocess.CalledProcessError as e:
-            error_output = e.stderr.strip()
-            print(f"Error fetching repo: {error_output}")
-            raise Exception(f"Failed to fetch repository updates: {error_output}")
-        except Exception as e:
-            print(f"An unexpected error occurred during fetching: {e}")
-            raise Exception(f"An unexpected error occurred during fetching: {str(e)}")
-
+        gl = gitlab.Gitlab(gitlab_url, private_token=personal_access_token)
+        gl.auth() # Test authentication
+        app.logger.info(f"Successfully authenticated with GitLab at {gitlab_url}")
+        return gl
+    except gitlab.exceptions.GitlabError as e:
+        app.logger.error(f"GitLab authentication error for URL {gitlab_url}: {e}")
+        return None
 
 @app.route('/')
 def index():
-    
+    # Use render_template to serve index.html from the templates folder
     return render_template('index.html')
 
 @app.route('/api/branches', methods=['POST'])
 def get_branches():
-   
-    data = request.get_json()
+    data = request.json
     repo_url = data.get('repoUrl')
-    username = parser['default']['USERNAME']
-    pat = parser['default']['PAT']
-    print(repo_url)
-    repo_url = repo_url.replace("https://", "https://" + username + ":" + pat + "@")
-    print(repo_url)
-  
+    personal_access_token = data.get('personalAccessToken')
 
     if not repo_url:
         return jsonify({"error": "Repository URL is required."}), 400
+    if not personal_access_token:
+        return jsonify({"error": "Personal Access Token is required for authentication."}), 401
 
     try:
-        clone_or_fetch_repo(repo_url) 
-        repo_path = get_repo_path(repo_url)
+        # Normalize the URL for GitLab API
+        if repo_url.startswith('git@'):
+            repo_url = repo_url.replace('git@', 'https://').replace(':', '/').replace('.git', '')
 
-        command = ['git', '-C', repo_path, 'branch', '-r']
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
-        lines = result.stdout.strip().split('\n')
+        # Ensure the URL is clean (remove trailing slash if present)
+        if repo_url.endswith('/'):
+            repo_url = repo_url[:-1]
 
-        branches = []
-        for line in lines:
-            line = line.strip()
-            if line.startswith('origin/'):
-                branch_name = line.replace('origin/', '')
-                if branch_name not in ['HEAD -> main', 'HEAD -> master', 'HEAD']:
-                    branches.append(branch_name)
-        
-        branches = sorted(list(set(branches)))
+        parts = repo_url.split('/')
 
-        if 'main' in branches:
-            branches.insert(0, branches.pop(branches.index('main')))
-        elif 'master' in branches:
-            branches.insert(0, branches.pop(branches.index('master')))
-            
-        return jsonify({"branches": branches})
+        # Handle cases like https://gitlab.com/project or https://gitlab.com/group/project
+        # We need at least 3 parts for the base URL (protocol, empty, domain)
+        # And then the project path starts from the 4th part.
+        if len(parts) < 4: # e.g., https://gitlab.com/project (4 parts: https:, , gitlab.com, project)
+            return jsonify({"error": "Invalid GitLab repository URL format. Expected at least 'https://domain.com/project'."}), 400
 
+        gitlab_url_base = '/'.join(parts[:3])
+        project_path_with_namespace = '/'.join(parts[3:])
+
+        # Remove .git suffix from project_path_with_namespace if present
+        if project_path_with_namespace.endswith('.git'):
+            project_path_with_namespace = project_path_with_namespace[:-4] # Remove last 4 characters (.git)
+
+        app.logger.info(f"Parsed GitLab URL Base: {gitlab_url_base}")
+        app.logger.info(f"Parsed Project Path with Namespace (after .git removal): {project_path_with_namespace}")
+
+        gl = get_gitlab_client(gitlab_url_base, personal_access_token)
+        if not gl:
+            return jsonify({"error": "Failed to authenticate with GitLab. Check your PAT."}), 401
+
+        project = gl.projects.get(project_path_with_namespace)
+        branches = project.branches.list(all=True)
+        branch_names = [branch.name for branch in branches]
+        return jsonify({"branches": branch_names})
+    except gitlab.exceptions.GitlabError as e:
+        app.logger.error(f"GitLab API error fetching branches for {repo_url}: {e}")
+        if "404 Project Not Found" in str(e):
+            return jsonify({"error": f"Repository not found or access denied for URL: {repo_url}. Ensure the URL is correct and the PAT has sufficient permissions."}), 404
+        return jsonify({"error": f"Failed to fetch branches: {e}"}), 500
     except Exception as e:
-        print(f"Error in get_branches: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"An unexpected error occurred in get_branches: {e}")
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 @app.route('/api/diff', methods=['POST'])
 def get_diff():
-   
-    data = request.get_json()
+    data = request.json
     repo_url = data.get('repoUrl')
-   
-    branch1 = data.get('branch1')
-    branch2 = data.get('branch2')
+    source_branch = data.get('sourceBranch')
+    target_branch = data.get('targetBranch')
+    personal_access_token = data.get('personalAccessToken')
 
-    if not all([repo_url, branch1, branch2]):
-        return jsonify({"error": "Repository URL, branch1, and branch2 are required."}), 400
+    if not repo_url or not source_branch or not target_branch:
+        return jsonify({"error": "Repository URL, source branch, and target branch are required."}), 400
+    if not personal_access_token:
+        return jsonify({"error": "Personal Access Token is required for authentication."}), 401
 
     try:
-        clone_or_fetch_repo(repo_url)
-        repo_path = get_repo_path(repo_url)
+        if repo_url.startswith('git@'):
+            repo_url = repo_url.replace('git@', 'https://').replace(':', '/').replace('.git', '')
+        if repo_url.endswith('/'):
+            repo_url = repo_url[:-1]
 
-        print(f"Getting diff for origin/{branch1}..origin/{branch2} in {repo_path}")
-        
-        command = ['git', '-C', repo_path, 'diff', f'origin/{branch1}..origin/{branch2}']
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=FETCH_TIMEOUT_SECONDS
-        )
+        parts = repo_url.split('/')
+        if len(parts) < 4:
+            return jsonify({"error": "Invalid GitLab repository URL format. Expected at least 'https://domain.com/project'."}), 400
 
-        return jsonify({"diff": result.stdout})
+        gitlab_url_base = '/'.join(parts[:3])
+        project_path_with_namespace = '/'.join(parts[3:])
 
-    except subprocess.TimeoutExpired:
-        raise Exception(f"Git diff command timed out after {FETCH_TIMEOUT_SECONDS} seconds. "
-                        "This is unexpected; diffs are usually fast if repo is fetched.")
-    except subprocess.CalledProcessError as e:
-        error_output = e.stderr.strip()
-        print(f"Git diff command failed: {error_output}")
-        if "unknown revision" in error_output.lower() or "bad revision" in error_output.lower():
-             return jsonify({"error": f"One or both branches ('{branch1}', '{branch2}') do not exist in the repository or are not accessible remotely. Please check branch names."}), 400
-        return jsonify({"error": f"Failed to get diff: {error_output}"}), 500
+        # Remove .git suffix from project_path_with_namespace if present
+        if project_path_with_namespace.endswith('.git'):
+            project_path_with_namespace = project_path_with_namespace[:-4]
+
+        app.logger.info(f"Diff - Parsed GitLab URL Base: {gitlab_url_base}")
+        app.logger.info(f"Diff - Parsed Project Path with Namespace (after .git removal): {project_path_with_namespace}")
+
+
+        gl = get_gitlab_client(gitlab_url_base, personal_access_token)
+        if not gl:
+            return jsonify({"error": "Failed to authenticate with GitLab. Check your PAT."}), 401
+
+        project = gl.projects.get(project_path_with_namespace)
+
+        diff_result = project.repository_compare(source_branch, target_branch)
+
+        full_diff_string = ""
+        if diff_result and 'diffs' in diff_result:
+            for d in diff_result['diffs']:
+                # Add a and b paths, index, and modes for proper diff formatting
+                old_path = d.get('old_path', 'N/A')
+                new_path = d.get('new_path', 'N/A')
+                full_diff_string += f"diff --git a/{old_path} b/{new_path}\n"
+
+                # Add index line if available (GitLab API often provides a_mode/b_mode)
+                if 'a_mode' in d and 'b_mode' in d:
+                    full_diff_string += f"index {d['a_mode']}..{d['b_mode']}"
+                    if 'new_file' in d and d['new_file']:
+                        full_diff_string += " 100644" # Standard mode for new files if not explicitly given
+                    elif 'renamed_file' in d and d['renamed_file']:
+                        full_diff_string += f" {d.get('new_file_mode', '100644')}" # Use new_file_mode for renamed
+                    full_diff_string += "\n"
+
+                # Add original diff content
+                full_diff_string += d.get('diff', '') + "\n"
+
+        return jsonify({"diff": full_diff_string.strip()})
+    except gitlab.exceptions.GitlabError as e:
+        app.logger.error(f"GitLab API error fetching diff for {repo_url}: {e}")
+        if "404 Project Not Found" in str(e):
+            return jsonify({"error": f"Repository not found or access denied for URL: {repo_url}."}), 404
+        return jsonify({"error": f"Failed to fetch diff: {e}"}), 500
     except Exception as e:
-        print(f"Error in get_diff: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"An unexpected error occurred in get_diff: {e}")
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+
+
+@app.route('/api/file_content', methods=['POST'])
+def get_file_content():
+    data = request.json
+    repo_url = data.get('repoUrl')
+    branch_name = data.get('branchName')
+    file_path = data.get('filePath')
+    personal_access_token = data.get('personalAccessToken')
+
+    if not repo_url or not branch_name or not file_path:
+        return jsonify({"error": "Repository URL, branch name, and file path are required."}), 400
+    if not personal_access_token:
+        return jsonify({"error": "Personal Access Token is required for authentication."}), 401
+
+    try:
+        if repo_url.startswith('git@'):
+            repo_url = repo_url.replace('git@', 'https://').replace(':', '/').replace('.git', '')
+        if repo_url.endswith('/'):
+            repo_url = repo_url[:-1]
+
+        parts = repo_url.split('/')
+        if len(parts) < 4:
+            return jsonify({"error": "Invalid GitLab repository URL format. Expected at least 'https://domain.com/project'."}), 400
+
+        gitlab_url_base = '/'.join(parts[:3])
+        project_path_with_namespace = '/'.join(parts[3:])
+
+        # Remove .git suffix from project_path_with_namespace if present
+        if project_path_with_namespace.endswith('.git'):
+            project_path_with_namespace = project_path_with_namespace[:-4]
+
+        app.logger.info(f"File Content - Parsed GitLab URL Base: {gitlab_url_base}")
+        app.logger.info(f"File Content - Parsed Project Path with Namespace (after .git removal): {project_path_with_namespace}")
+
+
+        gl = get_gitlab_client(gitlab_url_base, personal_access_token)
+        if not gl:
+            return jsonify({"error": "Failed to authenticate with GitLab. Check your PAT."}), 401
+
+        project = gl.projects.get(project_path_with_namespace)
+        file = project.files.get(file_path=file_path, ref=branch_name)
+        content = file.decode() # content is base64 encoded by default
+        return jsonify({"content": content})
+    except gitlab.exceptions.GitlabError as e:
+        app.logger.error(f"GitLab API error fetching file content for {repo_url}: {e}")
+        if "404 Not Found" in str(e) or "400 Bad Request" in str(e): # Common for file not found
+            return jsonify({"error": f"File '{file_path}' not found on branch '{branch_name}' or access denied."}), 404
+        return jsonify({"error": f"Failed to fetch file content: {e}"}), 500
+    except Exception as e:
+        app.logger.error(f"An unexpected error occurred in get_file_content: {e}")
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+
+# Removed the /api/repo_details endpoint as requested.
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, port=5000)
