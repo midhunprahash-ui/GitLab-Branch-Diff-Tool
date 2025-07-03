@@ -142,9 +142,15 @@
             font-weight: 500;
         }
 
-        /* Removed: .file-deleted {} */
-        /* Removed: .file-modified {} */
-        /* Removed: .changed-badge {} */
+        .file-modified {
+            background-color: #fffbeb;
+            /* yellow-100 */
+            border-color: #fcd34d;
+            /* yellow-300 */
+            color: #b45309;
+            /* yellow-800 */
+            font-weight: 500;
+        }
 
 
         /* NEW: Modal styles for file content diff */
@@ -199,9 +205,9 @@
             display: flex;
             width: 100%;
             overflow-x: auto;
-            /* Allow horizontal scrolling if lines are very long */
+
             flex-grow: 1;
-            /* Allow diff content to take available height */
+
             margin-top: 1rem;
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -215,16 +221,16 @@
             font-size: 0.875rem;
             line-height: 1.4;
             white-space: pre;
-            /* Preserve whitespace and line breaks */
+
             overflow-y: auto;
-            /* Individual scrolling for diff panes */
+
             max-height: calc(90vh - 120px);
-            /* Adjust based on modal header/footer */
+
         }
 
         .diff-pane:first-child {
             border-right: 1px solid #e5e7eb;
-            /* Separator line */
+
         }
 
         .diff-line {
@@ -264,7 +270,7 @@
 <body class="min-h-screen bg-gray-100 p-4 text-gray-800 flex flex-col items-center">
 
     <div class="w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
-        <h1 class="text-3xl font-bold text-center text-gray-700 mb-6 flex items-center justify-center">
+        <h1 class="text-4xl font-extrabold text-center text-gray-700 mb-6 flex items-center justify-center">
             GitLab Branch Compare Tool
         </h1>
 
@@ -375,11 +381,11 @@
 
 
         <button id="compare-branches-btn"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center"
+            class="w-full bg-gray-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 ease-in-out transform hover:scale-90 flex items-center justify-center"
             disabled>
             <span id="compare-spinner" class="hidden animate-spin mr-2 h-5 w-5">
 
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 2v4"></path>
                     <path d="M12 18v4"></path>
@@ -403,14 +409,25 @@
 
 
     <div id="commit-comparison-output" class="w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4 text-center">
-            <span id="source-branch-name-display" class="text-gray-600"></span> <span class="text-gray-600">-></span>
-            <span id="destination-branch-name-display" class="text-gray-600"></span>
+        <h2 class="text-3xl font-extrabold text-center text-blue-700 mb-4 bg-blue-100 p-3 rounded-lg">
+            Commit Differences: <span id="source-branch-name-display" class="text-amber-600"></span> <span
+                class="text-gray-600"> VS </span>
+            <span id="destination-branch-name-display" class="text-amber-600"></span>
         </h2>
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+            <div class="flex-1">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span id="source-branch-title"
+                        class="text-amber-600">Source
+                        Branch</span> (<span id="source-count">0</span>)</h3>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span id="destination-branch-title"
+                        class="text-amber-600">Destination Branch</span> (<span id="destination-count">0</span>)
+                </h3>
+            </div>
+        </div>
         <div class="commit-list-container">
             <div class="commit-list-pane" id="source-commits-pane">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span id="source-branch-title">Source
-                        Branch</span> (<span id="source-count">0</span>)</h3>
                 <div id="source-commits-list">
                     <!-- Source commits will be rendered here -->
                 </div>
@@ -420,9 +437,6 @@
                 </div>
             </div>
             <div class="commit-list-pane" id="destination-commits-pane">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span
-                        id="destination-branch-title">Destination Branch</span> (<span id="destination-count">0</span>)
-                </h3>
                 <div id="destination-commits-list">
                     <!-- Destination commits will be rendered here -->
                 </div>
@@ -436,15 +450,24 @@
 
     <!-- NEW: File comparison output container -->
     <div id="file-comparison-output" class="w-full bg-white rounded-xl shadow-lg p-6 mt-8 mx-4 hidden">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4 text-center">
-            File Differences: <span id="source-files-branch-name-display" class="text-gray-600"></span> <span
-                class="text-gray-600">-></span> <span id="destination-files-branch-name-display"
-                class="text-gray-600"></span>
+        <h2 class="text-3xl font-extrabold text-center text-blue-700 mb-4 bg-blue-100 p-3 rounded-lg">
+            File Differences: <span id="source-files-branch-name-display" class="text-amber-600"></span> <span
+                class="text-gray-600"> VS </span> <span id="destination-files-branch-name-display"
+                class="text-amber-600"></span>
         </h2>
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+            <div class="flex-1">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span id="source-files-title"
+                        class="text-amber-600">Source Branch</span> (<span id="source-files-count">0</span>)</h3>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span id="destination-files-title"
+                        class="text-amber-600">Destination Branch</span> (<span id="destination-files-count">0</span>)
+                </h3>
+            </div>
+        </div>
         <div class="commit-list-container"> <!-- Reusing commit-list-container for two-pane layout -->
             <div class="commit-list-pane">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span id="source-files-title">Source
-                        Branch</span> (<span id="source-files-count">0</span>)</h3>
                 <div id="source-files-list">
                     <!-- Source files will be rendered here -->
                 </div>
@@ -454,9 +477,6 @@
                 </div>
             </div>
             <div class="commit-list-pane">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span
-                        id="destination-files-title">Destination Branch</span> (<span
-                        id="destination-files-count">0</span>)</h3>
                 <div id="destination-files-list">
                     <!-- Destination files will be rendered here -->
                 </div>
@@ -473,7 +493,7 @@
         <div class="modal-content">
             <span class="close-button" id="close-diff-modal">&times;</span>
             <h2 class="text-2xl font-bold text-blue-700 mb-4 text-center">
-                File Content Diff: <span id="diff-file-name" class="text-gray-600"></span>
+                File Content Diff: <span id="diff-file-name" class="text-amber-600"></span>
             </h2>
             <div class="diff-container">
                 <pre id="source-file-content" class="diff-pane"></pre>
@@ -829,7 +849,7 @@
                     commitDiv.classList.add('commit-new-to-destination');
                 }
                 commitDiv.innerHTML = `
-                    <p class="commit-hash"><strong>ID:</strong> ${commit.hash.substring(0, 7)}</p>
+                    <p class="commit-hash"><strong>ID:</strong> ${commit.hash.substring(0, 8)}</p>
                     <p class="commit-message"><strong>Message:</strong> ${commit.message}</p>
                     <p class="commit-author-date">
                         <strong>Committed By:</strong> ${commit.author} <br>
@@ -842,8 +862,8 @@
             /**
              * Creates a DOM element for a single file item.
              * @param {string} filePath - The path of the file.
-             * @param {string} type - 'added' or empty for default (unchanged) styling.
-             * @param {boolean} showBadge - Whether to show the "Added" badge.
+             * @param {string} type - 'added', 'modified', or empty for default (unchanged) styling.
+             * @param {boolean} showBadge - Whether to show the "Added" or "Modified" badge.
              * @returns {HTMLElement} The created div element.
              */
             const createFileItemElement = (filePath, type = '', showBadge = false) => {
@@ -853,6 +873,8 @@
                 // Apply type-specific classes for background/border
                 if (type === 'added') {
                     fileDiv.classList.add('file-added');
+                } else if (type === 'modified') { // NEW: Add class for modified files
+                    fileDiv.classList.add('file-modified');
                 }
 
                 // Create a span for the file path
@@ -860,12 +882,15 @@
                 filePathSpan.textContent = filePath;
                 fileDiv.appendChild(filePathSpan);
 
-                // Add the badge ONLY if showBadge is true and type is 'added'
-                if (showBadge && type === 'added') {
-                    const addedLabel = document.createElement('span');
-                    addedLabel.textContent = ' (Added)';
-                    addedLabel.className = 'text-xs italic ml-1';
-                    fileDiv.appendChild(addedLabel);
+                // Add the badge ONLY if showBadge is true and type is 'added' or 'modified'
+                if (showBadge) {
+                    const labelText = type === 'added' ? ' (Added)' : (type === 'modified' ? ' (Modified)' : '');
+                    if (labelText) {
+                        const labelSpan = document.createElement('span');
+                        labelSpan.textContent = labelText;
+                        labelSpan.className = 'text-xs italic ml-1';
+                        fileDiv.appendChild(labelSpan);
+                    }
                 }
 
                 fileDiv.dataset.filepath = filePath;
@@ -874,12 +899,13 @@
 
             /**
              * Renders the file lists for source and destination branches,
-             * highlighting files unique to each branch with an "Added" label.
+             * highlighting files unique to each branch with an "Added" label,
+             * and modified files with a "Modified" label.
              * @param {Array<string>} sourceFiles - Array of file paths in the source branch.
              * @param {Array<string>} destinationFiles - Array of file paths in the destination branch.
              * @param {Array<string>} addedToDestination - Array of file paths added to destination (relative to source).
              * @param {Array<string>} deletedFromSource - Array of file paths deleted from source (relative to destination).
-             * @param {Array<string>} modifiedFiles - (Ignored in this version)
+             * @param {Array<string>} modifiedFiles - Array of file paths that are modified.
              */
             const renderFileComparison = (sourceFiles, destinationFiles, addedToDestination, deletedFromSource, modifiedFiles) => {
                 sourceFilesList.innerHTML = '';
@@ -902,16 +928,55 @@
 
                 const addedFilesSet = new Set(addedToDestination); // Files only in destination
                 const deletedFilesSet = new Set(deletedFromSource); // Files only in source (deleted from dest's view)
+                const modifiedFilesSet = new Set(modifiedFiles); // NEW: Set for modified files
 
-                // Populate Source Files
+                // --- Prepare files for Source Panel ---
+                const sourceAddedFiles = [];
+                const sourceModifiedFiles = [];
+                const sourceUnchangedFiles = [];
+
                 sourceFiles.forEach(file => {
+                    if (deletedFilesSet.has(file)) {
+                        sourceAddedFiles.push(file);
+                    } else if (modifiedFilesSet.has(file)) {
+                        sourceModifiedFiles.push(file);
+                    } else {
+                        sourceUnchangedFiles.push(file);
+                    }
+                });
+
+                // Concatenate in desired order: Added, Modified, Unchanged
+                const orderedSourceFiles = [...sourceAddedFiles, ...sourceModifiedFiles, ...sourceUnchangedFiles];
+
+                // --- Prepare files for Destination Panel ---
+                const destAddedFiles = [];
+                const destModifiedFiles = [];
+                const destUnchangedFiles = [];
+
+                destinationFiles.forEach(file => {
+                    if (addedFilesSet.has(file)) {
+                        destAddedFiles.push(file);
+                    } else if (modifiedFilesSet.has(file)) {
+                        destModifiedFiles.push(file);
+                    } else {
+                        destUnchangedFiles.push(file);
+                    }
+                });
+
+                // Concatenate in desired order: Added, Modified, Unchanged
+                const orderedDestinationFiles = [...destAddedFiles, ...destModifiedFiles, ...destUnchangedFiles];
+
+
+                // Populate Source Files List
+                orderedSourceFiles.forEach(file => {
                     let type = '';
                     let showBadge = false;
 
-                    // If a file is in the source branch but not in the destination branch,
-                    // it's "added" to the source's unique set from this perspective.
-                    if (deletedFilesSet.has(file)) {
+                    if (deletedFilesSet.has(file)) { // This means it's unique to source
                         type = 'added';
+                        showBadge = true;
+                    } else if (modifiedFilesSet.has(file)) {
+                        type = 'modified';
                         showBadge = true;
                     }
 
@@ -919,15 +984,16 @@
                     sourceFilesList.appendChild(fileItem);
                 });
 
-                // Populate Destination Files
-                destinationFiles.forEach(file => {
+                // Populate Destination Files List
+                orderedDestinationFiles.forEach(file => {
                     let type = '';
                     let showBadge = false;
 
-                    // If a file is in the destination branch but not in the source branch,
-                    // it's "added" to the destination's unique set.
-                    if (addedFilesSet.has(file)) {
+                    if (addedFilesSet.has(file)) { // This means it's unique to destination
                         type = 'added';
+                        showBadge = true;
+                    } else if (modifiedFilesSet.has(file)) {
+                        type = 'modified';
                         showBadge = true;
                     }
 
@@ -947,50 +1013,6 @@
 
             sourceBranchSelect.addEventListener('change', updateCompareButtonState);
             destinationBranchSelect.addEventListener('change', updateCompareButtonState);
-
-            // Removed synchronized scrolling logic for commit panes
-            /*
-            const sourceCommitsPane = document.getElementById('source-commits-pane');
-            const destinationCommitsPane = document.getElementById('destination-commits-pane');
-
-            let isScrolling; // Flag to prevent scroll event loops
-
-            const setupSynchronizedScrolling = () => {
-                // Remove previous listeners to prevent duplicates if compare is clicked multiple times
-                sourceCommitsPane.removeEventListener('scroll', syncScrollSourceToDestination);
-                destinationCommitsPane.removeEventListener('scroll', syncScrollDestinationToSource);
-
-                // Add new listeners
-                sourceCommitsPane.addEventListener('scroll', syncScrollSourceToDestination);
-                destinationCommitsPane.addEventListener('scroll', syncScrollDestinationToSource);
-            };
-
-            const syncScrollSourceToDestination = () => {
-                if (!isScrolling) {
-                    isScrolling = true;
-                    destinationCommitsPane.scrollTop = sourceCommitsPane.scrollTop;
-                }
-                clearTimeout(isScrolling);
-                isScrolling = setTimeout(() => {
-                    isScrolling = false;
-                }, 50);
-            };
-
-            const syncScrollDestinationToSource = () => {
-                if (!isScrolling) {
-                    isScrolling = true;
-                    sourceCommitsPane.scrollTop = destinationCommitsPane.scrollTop;
-                }
-                clearTimeout(isScrolling);
-                isScrolling = setTimeout(() => {
-                    isScrolling = false;
-                }, 50);
-            };
-            */
-
-            // ******************************************************
-            // NEW: File Content Diff Logic
-            // ******************************************************
 
             // Event listener for clicking on file items
             fileComparisonOutput.addEventListener('click', async (event) => {

@@ -8,8 +8,16 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-GITLAB_API_BASE_URL = "https://gitlab.com/api/v4"
-LOG_MAX_COMMITS = 100 # Limit the number of commits to fetch to prevent very large responses
+
+def get_gitlab_base_url(repo_url):
+    """
+    Extracts the base URL (scheme + netloc) from a GitLab repository URL.
+    e.g., 'https://gitlab.com/group/subgroup/project.git' -> 'https://gitlab.com'
+    """
+    parsed_url = urlparse(repo_url)
+    if not parsed_url.scheme or not parsed_url.netloc:
+        raise ValueError("Invalid GitLab repository URL. Must include scheme (e.g., https://) and hostname.")
+    return f"{parsed_url.scheme}://{parsed_url.netloc}"
 
 def get_project_id_from_url(repo_url):
     """
@@ -22,47 +30,75 @@ def get_project_id_from_url(repo_url):
     if not path_parts:
         raise ValueError("Invalid GitLab repository URL format. Could not extract project path.")
 
-    # Remove .git suffix if present
+  
     project_path = '/'.join(path_parts)
     if project_path.endswith('.git'):
-        project_path = project_path[:-4] # Remove '.git'
+        project_path = project_path[:-4]
 
-    return quote(project_path, safe='') # URL-encode the path
+    return quote(project_path, safe='') 
 
 
-def make_gitlab_api_request(endpoint, pat=None, params=None):
+def make_gitlab_api_request(endpoint, base_url, pat=None, params=None):
     """
-    Makes a GET request to the GitLab API.
+    Makes a GET request to the GitLab API, handling pagination to fetch all results.
     Handles authentication with PAT and basic error checking.
     """
     headers = {}
     if pat:
         headers['Private-Token'] = pat
 
-    url = f"{GITLAB_API_BASE_URL}{endpoint}"
-    print(f"Making GitLab API request to: {url} with params: {params} (PAT provided: {bool(pat)})")
+    all_results = []
+    page = 1
+    per_page = 100 
 
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=30)
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-        return response.json()
-    except requests.exceptions.Timeout:
-        raise Exception(f"GitLab API request timed out for endpoint: {endpoint}")
-    except requests.exceptions.HTTPError as e:
-        status_code = e.response.status_code
-        error_detail = e.response.text
-        if status_code == 401:
-            raise Exception(f"Authentication failed (401 Unauthorized). Please check your PAT.")
-        elif status_code == 403:
-            raise Exception(f"Access forbidden (403 Forbidden). Insufficient permissions or repository is private.")
-        elif status_code == 404:
-            raise Exception(f"Resource not found (404 Not Found). Check repository URL or branch names. Detail: {error_detail}")
-        else:
-            raise Exception(f"GitLab API error {status_code}: {error_detail}")
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Network error or invalid GitLab API URL: {e}")
-    except Exception as e:
-        raise Exception(f"An unexpected error occurred during API request: {e}")
+    while True:
+        current_params = params.copy() if params else {}
+        current_params['page'] = page
+        current_params['per_page'] = per_page
+
+        url = f"{base_url}/api/v4{endpoint}" 
+        print(f"Making GitLab API request to: {url} with params: {current_params} (PAT provided: {bool(pat)})")
+
+        try:
+            response = requests.get(url, headers=headers, params=current_params, timeout=30)
+            response.raise_for_status() 
+            
+            page_results = response.json()
+            
+           
+            if not isinstance(page_results, list):
+                all_results.append(page_results)
+                break 
+            
+            if not page_results:
+                break 
+
+            all_results.extend(page_results)
+
+           
+            if len(page_results) < per_page:
+                break
+            page += 1
+
+        except requests.exceptions.Timeout:
+            raise Exception(f"GitLab API request timed out for endpoint: {endpoint}")
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code
+            error_detail = e.response.text
+            if status_code == 401:
+                raise Exception(f"Authentication failed (401 Unauthorized). Please check your PAT.")
+            elif status_code == 403:
+                raise Exception(f"Access forbidden (403 Forbidden). Insufficient permissions or repository is private.")
+            elif status_code == 404:
+                raise Exception(f"Resource not found (404 Not Found). Check repository URL or branch names. Detail: {error_detail}")
+            else:
+                raise Exception(f"GitLab API error {status_code}: {error_detail}")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error or invalid GitLab API URL: {e}")
+        except Exception as e:
+            raise Exception(f"An unexpected error occurred during API request: {e}")
+    
+    return all_results
 
 @app.route('/')
 def index():
@@ -81,17 +117,19 @@ def get_branches():
         return jsonify({"error": "Repository URL is required."}), 400
 
     try:
+        base_url = get_gitlab_base_url(repo_url) 
         project_id = get_project_id_from_url(repo_url)
         branches_data = make_gitlab_api_request(
             f'/projects/{project_id}/repository/branches',
+            base_url=base_url, 
             pat=pat,
-            params={'per_page': 100} # Fetch up to 100 branches
+            params={'per_page': 100}
         )
 
         branches = [branch['name'] for branch in branches_data]
-        branches.sort() # Sort alphabetically
+        branches.sort() 
 
-        # Move 'main' or 'master' to the top if they exist
+     
         if 'main' in branches:
             branches.insert(0, branches.pop(branches.index('main')))
         elif 'master' in branches:
@@ -120,27 +158,30 @@ def compare_commits():
         return jsonify({"error": "Repository URL, sourceBranch, and destinationBranch are required."}), 400
 
     try:
+        base_url = get_gitlab_base_url(repo_url)
         project_id = get_project_id_from_url(repo_url)
 
-        # Fetch commits for source branch
+       
         source_commits_data = make_gitlab_api_request(
             f'/projects/{project_id}/repository/commits',
+            base_url=base_url, 
             pat=pat,
-            params={'ref_name': source_branch, 'per_page': LOG_MAX_COMMITS}
+            params={'ref_name': source_branch} 
         )
         source_commits = [{
             "hash": commit['id'],
-            "message": commit['title'], # GitLab API provides 'title' as the first line of commit message
+            "message": commit['title'], 
             "author": commit['author_name'],
-            "date": commit['authored_date'] # ISO 8601 format
+            "date": commit['authored_date'] 
         } for commit in source_commits_data]
         print(f"Found {len(source_commits)} commits in source branch.")
 
-        # Fetch commits for destination branch
+   
         destination_commits_data = make_gitlab_api_request(
             f'/projects/{project_id}/repository/commits',
+            base_url=base_url, 
             pat=pat,
-            params={'ref_name': destination_branch, 'per_page': LOG_MAX_COMMITS}
+            params={'ref_name': destination_branch} 
         )
         destination_commits = [{
             "hash": commit['id'],
@@ -164,7 +205,8 @@ def compare_commits():
 def compare_files():
     """
     Compares files between two branches by listing all files in each branch
-    and identifying unique files (added to one branch, not present in the other).
+    and identifying unique files (added to one branch, not present in the other)
+    and modified files (present in both but with content differences).
     """
     data = request.json
     repo_url = data.get('repoUrl')
@@ -178,54 +220,81 @@ def compare_files():
         return jsonify({"error": "Missing repository URL, source branch, or destination branch"}), 400
 
     try:
+        base_url = get_gitlab_base_url(repo_url) 
         project_id = get_project_id_from_url(repo_url)
 
-        # 1. Get all files in source branch
+      
         source_branch_info = make_gitlab_api_request(
             f'/projects/{project_id}/repository/branches/{quote(source_branch, safe="")}',
+            base_url=base_url, 
             pat=pat
         )
-        source_commit_id = source_branch_info['commit']['id']
+        
+        source_commit_id = source_branch_info[0]['commit']['id'] if isinstance(source_branch_info, list) else source_branch_info['commit']['id']
 
         source_tree_data = make_gitlab_api_request(
             f'/projects/{project_id}/repository/tree',
+            base_url=base_url, 
             pat=pat,
-            params={'ref': source_commit_id, 'recursive': True, 'per_page': 1000} # Fetch all files recursively
+            params={'ref': source_commit_id, 'recursive': True} 
         )
         source_files = sorted([item['path'] for item in source_tree_data if item['type'] == 'blob'])
-        print(f"DEBUG: Files in source branch ({source_branch}): {source_files}") # Added debug log
+        print(f"DEBUG: Files in source branch ({source_branch}): {source_files}") 
         print(f"Found {len(source_files)} files in source branch.")
 
 
-        # 2. Get all files in destination branch
         destination_branch_info = make_gitlab_api_request(
             f'/projects/{project_id}/repository/branches/{quote(destination_branch, safe="")}',
+            base_url=base_url, 
             pat=pat
         )
-        destination_commit_id = destination_branch_info['commit']['id']
+       
+        destination_commit_id = destination_branch_info[0]['commit']['id'] if isinstance(destination_branch_info, list) else destination_branch_info['commit']['id']
 
         destination_tree_data = make_gitlab_api_request(
             f'/projects/{project_id}/repository/tree',
+            base_url=base_url, 
             pat=pat,
-            params={'ref': destination_commit_id, 'recursive': True, 'per_page': 1000}
+            params={'ref': destination_commit_id, 'recursive': True} 
         )
         destination_files = sorted([item['path'] for item in destination_tree_data if item['type'] == 'blob'])
-        print(f"DEBUG: Files in destination branch ({destination_branch}): {destination_files}") # Added debug log
+        print(f"DEBUG: Files in destination branch ({destination_branch}): {destination_files}") 
         print(f"Found {len(destination_files)} files in destination branch.")
 
 
-        # Calculate unique files using set operations
+       
         source_files_set = set(source_files)
         destination_files_set = set(destination_files)
 
-        # Files added to destination (exist in destination, not in source)
+
         added_files_to_destination = sorted(list(destination_files_set - source_files_set))
         
-        # Files deleted from source (exist in source, not in destination)
+      
         deleted_files_from_source = sorted(list(source_files_set - destination_files_set))
         
-        # Modified files list is explicitly removed as per user's request
-        modified_files = [] 
+     
+        modified_files = []
+        try:
+            compare_data = make_gitlab_api_request(
+                f'/projects/{project_id}/repository/compare',
+                base_url=base_url,
+                pat=pat,
+                params={'from': source_branch, 'to': destination_branch, 'straight': True}
+            )
+          
+            compare_diffs = compare_data[0].get('diffs', []) if compare_data else []
+            print(f"Raw GitLab Compare Diffs: {compare_diffs}")
+
+            for diff_obj in compare_diffs:
+              
+                if not diff_obj.get('new_file') and not diff_obj.get('deleted_file') and diff_obj.get('diff'):
+                  
+                    modified_files.append(diff_obj.get('new_path') or diff_obj.get('old_path'))
+            modified_files = sorted(list(set(modified_files))) 
+        except Exception as e:
+            print(f"Warning: Could not fetch diffs for modified files: {e}")
+      
+
 
         print(f"Backend Final Lists - Added: {added_files_to_destination}, Deleted: {deleted_files_from_source}, Modified: {modified_files}")
 
@@ -235,7 +304,7 @@ def compare_files():
             "destination_files": destination_files,
             "added_files_to_destination": added_files_to_destination,
             "deleted_files_from_source": deleted_files_from_source,
-            "modified_files": modified_files # This will always be empty now
+            "modified_files": modified_files
         })
 
     except Exception as e:
@@ -261,28 +330,29 @@ def get_file_content_diff():
         return jsonify({"error": "Missing required parameters for file content diff."}), 400
 
     try:
+        base_url = get_gitlab_base_url(repo_url) 
         project_id = get_project_id_from_url(repo_url)
 
-        # Use the compare API to get the diff for the specific file
-        # We set 'straight': True for a direct comparison of the two branch tips
+   
+       
         compare_data = make_gitlab_api_request(
             f'/projects/{project_id}/repository/compare',
+            base_url=base_url, 
             pat=pat,
             params={'from': source_branch, 'to': destination_branch, 'straight': True}
         )
 
+        compare_diffs = compare_data[0].get('diffs', []) if compare_data else []
+
         file_diff_content = None
-        for diff_obj in compare_data.get('diffs', []):
-            # Check if the file path matches either the old or new path in the diff object
-            # This handles renames where old_path != new_path but content changed
+        for diff_obj in compare_diffs:
+   
             if diff_obj.get('old_path') == file_path or diff_obj.get('new_path') == file_path:
                 file_diff_content = diff_obj.get('diff', '')
                 break
 
         if file_diff_content is None:
-            # If the file path is not found in the diffs, it means it's unchanged,
-            # or it's a file that exists in one branch but not the other (covered by file_compare already)
-            # For content diff, we only return if there's an actual diff string.
+       
             return jsonify({"diff_content": "", "message": "File content is identical or file not found in diff."})
 
         return jsonify({"diff_content": file_diff_content})
