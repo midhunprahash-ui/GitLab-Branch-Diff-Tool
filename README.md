@@ -75,4 +75,4 @@ pip instal requirements.txt
 python app.py -> MAC
 py app.py     -> Windows
 ```
-                                                     ```Developed with 🧠 by Midhun.```
+```Developed with 🧠 by Midhun.```
