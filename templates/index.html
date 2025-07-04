@@ -14,79 +14,57 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* Custom styles for commit lists */
         .commit-list-container {
             display: flex;
             gap: 1.5rem;
-            /* gap-6 */
             max-height: 70vh;
-            /* Limit height to enable scrolling */
         }
 
         .commit-list-pane {
             flex: 1;
-            background-color: #f9fafb;
-            /* gray-50 */
-            border: 1px solid #e5e7eb;
-            /* gray-200 */
+            background-color: #1f2937;
+            border: 1px solid #374151;
             border-radius: 0.5rem;
             padding: 1rem;
             overflow-y: auto;
-            /* Make panes scrollable */
         }
 
         .commit-item {
             padding: 0.75rem;
-            /* p-3 */
             margin-bottom: 0.5rem;
-            /* mb-2 */
             border-radius: 0.375rem;
-            /* rounded-md */
-            background-color: #ffffff;
-            /* bg-white */
+            background-color: #374151;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            /* shadow-sm */
-            border: 1px solid #f3f4f6;
-            /* gray-100 */
+            border: 1px solid #4b5563;
             transition: background-color 0.2s ease-in-out;
         }
 
         .commit-item:hover {
-            background-color: #f0f4f8;
-            /* A slightly darker hover for clarity */
+            background-color: #4b5563;
         }
 
         .commit-hash {
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
             font-size: 0.875rem;
-            /* text-sm */
-            color: #4b5563;
-            /* gray-700 */
+            color: #ffffff;
         }
 
         .commit-message {
             font-size: 1rem;
-            /* text-base */
             font-weight: 500;
-            /* font-medium */
-            color: #1f2937;
-            /* gray-900 */
+            color: #e5e7eb;
             margin-top: 0.25rem;
         }
 
         .commit-new-to-destination {
-            background-color: #dcfce7;
-            /* green-100 */
-            border-color: #86efac;
-            /* green-300 */
+            background-color: #064e3b;
+            border-color: #34d399;
         }
 
         .commit-new-to-destination .commit-message {
-            color: #16a34a;
-            /* green-700 */
+            color: #d8ffed;
         }
 
-        /* Spinner animation */
         @keyframes spin {
             from {
                 transform: rotate(0deg);
@@ -101,59 +79,41 @@
             animation: spin 1s linear infinite;
         }
 
-        /* NEW FILE ITEM STYLES */
         .file-item {
             padding: 0.5rem 0.75rem;
             margin-bottom: 0.25rem;
             border-radius: 0.375rem;
-            background-color: #ffffff;
+            background-color: #374151;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            border: 1px solid #f3f4f6;
+            border: 1px solid #4b5563;
             font-size: 0.9rem;
-            color: #374151;
-            /* gray-700 */
+            color: #d1d5db;
             word-wrap: break-word;
-            /* Ensure long file names wrap */
             cursor: pointer;
-            /* Indicate clickable */
-
-            /* Enable flexbox for internal layout */
             display: flex;
             justify-content: space-between;
-            /* Pushes content to ends */
             align-items: center;
-            /* Vertically centers items */
         }
 
         .file-item:hover {
-            background-color: #e0e7ff;
-            /* blue-100 for clickable */
-            border-color: #93c5fd;
-            /* blue-300 */
+            background-color: #1e3a8a;
+            border-color: #60a5fa;
         }
 
         .file-added {
-            background-color: #dcfce7;
-            /* green-100 */
-            border-color: #86efac;
-            /* green-300 */
-            color: #16a34a;
-            /* green-700 */
+            background-color: #064e3b;
+            border-color: #34d399;
+            color: #ffffff;
             font-weight: 500;
         }
 
         .file-modified {
-            background-color: #fffbeb;
-            /* yellow-100 */
-            border-color: #fcd34d;
-            /* yellow-300 */
-            color: #b45309;
-            /* yellow-800 */
+            background-color: #78350f;
+            border-color: #fbbf24;
+            color: #ffffff;
             font-weight: 500;
         }
 
-
-        /* NEW: Modal styles for file content diff */
         .modal {
             position: fixed;
             z-index: 1000;
@@ -169,7 +129,7 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: #1f2937;
             margin: auto;
             padding: 20px;
             border-radius: 0.75rem;
@@ -178,13 +138,12 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             position: relative;
             max-height: 90vh;
-            /* Limit modal height */
             display: flex;
             flex-direction: column;
         }
 
         .close-button {
-            color: #aaa;
+            color: #9ca3af;
             float: right;
             font-size: 28px;
             font-weight: bold;
@@ -196,7 +155,7 @@
 
         .close-button:hover,
         .close-button:focus {
-            color: black;
+            color: #f3f4f6;
             text-decoration: none;
             cursor: pointer;
         }
@@ -205,13 +164,11 @@
             display: flex;
             width: 100%;
             overflow-x: auto;
-
             flex-grow: 1;
-
             margin-top: 1rem;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #374151;
             border-radius: 0.5rem;
-            background-color: #f9fafb;
+            background-color: #111827;
         }
 
         .diff-pane {
@@ -221,16 +178,12 @@
             font-size: 0.875rem;
             line-height: 1.4;
             white-space: pre;
-
             overflow-y: auto;
-
             max-height: calc(90vh - 120px);
-
         }
 
         .diff-pane:first-child {
-            border-right: 1px solid #e5e7eb;
-
+            border-right: 1px solid #374151;
         }
 
         .diff-line {
@@ -239,43 +192,44 @@
         }
 
         .diff-line.added {
-            background-color: #dcfce7;
-            /* green-100 */
-            color: #16a34a;
-            /* green-700 */
+            background-color: #065f46;
+            color: #a7f3d0;
         }
 
         .diff-line.deleted {
-            background-color: #fee2e2;
-            /* red-100 */
-            color: #dc2626;
-            /* red-700 */
+            background-color: #7f1d1d;
+            color: #ffd4d4;
         }
 
         .diff-line.unchanged {
-            color: #374151;
-            /* gray-700 */
+            color: #e5e7eb;
         }
 
         .diff-line.header {
-            color: #6b7280;
-            /* gray-500 */
-            background-color: #e5e7eb;
-            /* gray-200 */
+            color: #9ca3af;
+            background-color: #374151;
             font-weight: bold;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        input[type="date"] {
+            accent-color: white;
         }
     </style>
 </head>
 
-<body class="min-h-screen bg-gray-100 p-4 text-gray-800 flex flex-col items-center">
+<body class="min-h-screen bg-gray-950 p-4 text-gray-100 flex flex-col items-center">
 
-    <div class="w-full bg-white rounded-xl shadow-lg p-6 mb-8 mx-4">
-        <h1 class="text-4xl font-extrabold text-center text-gray-700 mb-6 flex items-center justify-center">
+    <div class="w-full bg-gray-900 rounded-xl shadow-xl p-6 mb-8 mx-4">
+        <h1 class="text-4xl font-extrabold text-center text-amber-300 mb-6 flex items-center justify-center">
             GitLab Branch Compare Tool
         </h1>
 
         <div class="mb-4">
-            <label for="repo-url" class="block text-gray-700 text-sm font-medium mb-2">
+            <label for="repo-url" class="block text-gray-300 text-sm font-medium mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="inline-block mr-1 h-4 w-4">
@@ -285,27 +239,27 @@
                 GitLab Repository URL
             </label>
             <input type="text" id="repo-url"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                class="w-full p-3 border border-gray-700 rounded-lg focus:ring-blue-400 focus:border-blue-400 shadow-sm bg-gray-800 text-gray-200"
                 placeholder="e.g., https://gitlab.com/your-org/your-repo.git" />
         </div>
 
         <div class="mb-6">
-            <label for="pat" class="block text-gray-700 text-sm font-medium mb-2">
+            <label for="pat" class="block text-gray-300 text-sm font-medium mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="inline-block mr-1 h-4 w-4">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    <path d="M7 11V7a5 0 0 1 10 0v4"></path>
                 </svg>
-                Personal Access Token (PAT) <span class="text-gray-500 text-xs">(Optional, required for private
+                Personal Access Token (PAT) <span class="text-gray-400 text-xs">(Optional, required for private
                     repos)</span>
             </label>
             <div class="flex gap-2">
                 <input type="password" id="pat"
-                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                    class="flex-grow p-3 border border-gray-700 rounded-lg focus:ring-blue-400 focus:border-blue-400 shadow-sm bg-gray-800 text-gray-200"
                     placeholder="Enter your GitLab PAT" />
                 <button id="fetch-branches-btn"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300 ease-in-out flex items-center justify-center">
+                    class="bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300 ease-in-out flex items-center justify-center">
                     <span id="fetch-branches-spinner" class="hidden animate-spin mr-2 h-5 w-5">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -334,172 +288,170 @@
             </div>
         </div>
 
-
         <div class="flex flex-col md:flex-row gap-6 mb-6">
-
             <div class="flex-1">
-                <label for="source-branch" class="block text-gray-700 text-sm font-medium mb-2">
-
+                <label for="source-branch" class="block text-gray-300 text-sm font-medium mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="inline-block mr-1 h-4 w-4">
                         <line x1="6" x2="6" y1="3" y2="15"></line>
-                        <path d="M18 6H9a3 3 0 0 0-3 3v10"></path>
+                        <path d="M18 6H9a3 0 0 0-3 3v10"></path>
                         <path d="M12 10 9 7 6 10"></path>
                         <path d="M18 10 15 7 12 10"></path>
                     </svg>
-                    Select Source Branch (Base)
+                    Select Source Branch
                 </label>
                 <select id="source-branch"
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white"
+                    class="w-full p-3 border border-gray-700 rounded-lg focus:ring-blue-400 focus:border-blue-400 shadow-sm bg-gray-800 text-gray-200"
                     disabled>
                     <option value="">No branches available</option>
                 </select>
             </div>
 
-
             <div class="flex-1">
-                <label for="destination-branch" class="block text-gray-700 text-sm font-medium mb-2">
-
+                <label for="destination-branch" class="block text-gray-300 text-sm font-medium mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="inline-block mr-1 h-4 w-4">
                         <line x1="6" x2="6" y1="3" y2="15"></line>
-                        <path d="M18 6H9a3 3 0 0 0-3 3v10"></path>
+                        <path d="M18 6H9a3 0 0 0-3 3v10"></path>
                         <path d="M12 10 9 7 6 10"></path>
                         <path d="M18 10 15 7 12 10"></path>
                     </svg>
-                    Select Destination Branch (Compare)
+                    Select Destination Branch
                 </label>
                 <select id="destination-branch"
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white"
+                    class="w-full p-3 border border-gray-700 rounded-lg focus:ring-blue-400 focus:border-blue-400 shadow-sm bg-gray-800 text-gray-200"
                     disabled>
                     <option value="">No branches available</option>
                 </select>
             </div>
         </div>
 
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+            <div class="flex-1">
+                <label for="from-date" class="block text-gray-300 text-sm font-medium mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="inline-block mr-1 h-4 w-4">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    From Date
+                </label>
+                <input type="date" id="from-date"
+                    class="w-full p-3 border border-gray-700 rounded-lg focus:ring-blue-400 focus:border-blue-400 shadow-sm bg-gray-800 text-gray-200" />
+            </div>
+            <div class="flex-1">
+                <label for="to-date" class="block text-gray-300 text-sm font-medium mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="inline-block mr-1 h-4 w-4">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    To Date
+                </label>
+                <input type="date" id="to-date"
+                    class="w-full p-3 border border-gray-700 rounded-lg focus:ring-blue-400 focus:border-blue-400 shadow-sm bg-gray-800 text-gray-200" />
+            </div>
+        </div>
 
-        <button id="compare-branches-btn"
-            class="w-full bg-gray-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 ease-in-out transform hover:scale-90 flex items-center justify-center"
-            disabled>
-            <span id="compare-spinner" class="hidden animate-spin mr-2 h-5 w-5">
-
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v4"></path>
-                    <path d="M12 18v4"></path>
-                    <path d="M4.93 4.93l2.83 2.83"></path>
-                    <path d="M16.24 16.24l2.83 2.83"></path>
-                    <path d="M2 12h4"></path>
-                    <path d="M18 12h4"></path>
-                    <path d="M4.93 19.07l2.83-2.83"></path>
-                    <path d="M16.24 7.76l2.83-2.83"></path>
-                </svg>
-            </span>
-            <span id="compare-text">Compare Branches</span>
-        </button>
-
-
+        <div class="flex justify-center mb-6"> <button id="compare-branches-btn"
+                class="stroke-width bg-amber-300 hover:bg-amber-200 text-black font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 ease-in-out transform hover:scale-89 flex items-center justify-center">
+                <span id="compare-spinner" class="hidden animate-spin mr-2 h-7 w-7">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v4"></path>
+                        <path d="M12 18v4"></path>
+                        <path d="M4.93 4.93l2.83 2.83"></path>
+                        <path d="M16.24 16.24l2.83 2.83"></path>
+                        <path d="M2 12h4"></path>
+                        <path d="M18 12h4"></path>
+                        <path d="M4.93 19.07l2.83-2.83"></path>
+                        <path d="M16.24 7.76l2.83-2.83"></path>
+                    </svg>
+                </span>
+                <span id="compare-text">Compare Branches</span>
+            </button>
+        </div>
         <div id="error-message"
-            class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+            class="hidden mt-4 p-3 bg-red-900 border border-red-600 text-red-200 rounded-lg text-center">
 
         </div>
     </div>
 
 
-    <div id="commit-comparison-output" class="w-full bg-white rounded-xl shadow-lg p-6 hidden mx-4">
-        <h2 class="text-3xl font-extrabold text-center text-blue-700 mb-4 bg-blue-100 p-3 rounded-lg">
-            Commit Differences: <span id="source-branch-name-display" class="text-amber-600"></span> <span
-                class="text-gray-600"> VS </span>
-            <span id="destination-branch-name-display" class="text-amber-600"></span>
+    <div id="commit-comparison-output" class="w-full bg-gray-900 rounded-xl shadow-xl p-6 hidden mx-4">
+        <h2 class="text-3xl font-extrabold text-center text-blue-100 mb-4 bg-blue-950 p-3 rounded-lg">
+            Commit Differences: <span id="source-branch-name-display" class="text-amber-300"></span> <span
+                class="text-blue-100"> VS </span>
+            <span id="destination-branch-name-display" class="text-amber-300"></span>
         </h2>
         <div class="flex flex-col md:flex-row gap-6 mb-6">
             <div class="flex-1">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span id="source-branch-title"
-                        class="text-amber-600">Source
+                <h3 class="text-xl font-semibold text-gray-200 mb-3">Commits in <span id="source-branch-title"
+                        class="text-amber-300">Source
                         Branch</span> (<span id="source-count">0</span>)</h3>
             </div>
             <div class="flex-1">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Commits in <span id="destination-branch-title"
-                        class="text-amber-600">Destination Branch</span> (<span id="destination-count">0</span>)
+                <h3 class="text-xl font-semibold text-gray-200 mb-3">Commits in <span id="destination-branch-title"
+                        class="text-amber-300">Destination Branch</span> (<span id="destination-count">0</span>)
                 </h3>
             </div>
         </div>
         <div class="commit-list-container">
             <div class="commit-list-pane" id="source-commits-pane">
                 <div id="source-commits-list">
-                    <!-- Source commits will be rendered here -->
                 </div>
                 <div id="no-source-commits-message"
-                    class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
-                    No commits found for this branch.
+                    class="hidden mt-4 p-3 bg-gray-800 text-gray-400 rounded-lg text-center text-sm">
+                    No commits found for this branch in the given date range.
                 </div>
             </div>
             <div class="commit-list-pane" id="destination-commits-pane">
                 <div id="destination-commits-list">
-                    <!-- Destination commits will be rendered here -->
                 </div>
                 <div id="no-destination-commits-message"
-                    class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
-                    No commits found for this branch.
+                    class="hidden mt-4 p-3 bg-gray-800 text-gray-400 rounded-lg text-center text-sm">
+                    No commits found for this branch in the given date range.
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- NEW: File comparison output container -->
-    <div id="file-comparison-output" class="w-full bg-white rounded-xl shadow-lg p-6 mt-8 mx-4 hidden">
-        <h2 class="text-3xl font-extrabold text-center text-blue-700 mb-4 bg-blue-100 p-3 rounded-lg">
-            File Differences: <span id="source-files-branch-name-display" class="text-amber-600"></span> <span
-                class="text-gray-600"> VS </span> <span id="destination-files-branch-name-display"
-                class="text-amber-600"></span>
+    <div id="file-comparison-output" class="w-full bg-gray-900 rounded-xl shadow-xl p-6 mt-8 mx-4 hidden">
+        <h2 class="text-3xl font-extrabold text-center text-blue-100 mb-4 bg-blue-950 p-3 rounded-lg">
+            File Differences
         </h2>
-        <div class="flex flex-col md:flex-row gap-6 mb-6">
-            <div class="flex-1">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span id="source-files-title"
-                        class="text-amber-600">Source Branch</span> (<span id="source-files-count">0</span>)</h3>
-            </div>
-            <div class="flex-1">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Files in <span id="destination-files-title"
-                        class="text-amber-600">Destination Branch</span> (<span id="destination-files-count">0</span>)
-                </h3>
-            </div>
+        <h3 class="text-xl font-semibold text-gray-200 mb-3 text-center">
+            Files added or modified between
+            <span id="source-files-branch-name-display" class="text-amber-300"></span> and
+            <span id="destination-files-branch-name-display" class="text-amber-300"></span>
+            (<span id="combined-files-count">0</span>)
+        </h3>
+        <div id="combined-file-list" class="commit-list-pane">
         </div>
-        <div class="commit-list-container"> <!-- Reusing commit-list-container for two-pane layout -->
-            <div class="commit-list-pane">
-                <div id="source-files-list">
-                    <!-- Source files will be rendered here -->
-                </div>
-                <div id="no-source-files-message"
-                    class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
-                    No files found in source branch.
-                </div>
-            </div>
-            <div class="commit-list-pane">
-                <div id="destination-files-list">
-                    <!-- Destination files will be rendered here -->
-                </div>
-                <div id="no-destination-files-message"
-                    class="hidden mt-4 p-3 bg-gray-100 text-gray-600 rounded-lg text-center text-sm">
-                    No files found in destination branch.
-                </div>
-            </div>
+        <div id="no-files-message" class="hidden mt-4 p-3 bg-gray-800 text-gray-400 rounded-lg text-center text-sm">
+            No added or modified files found between these branches in the given date range.
         </div>
     </div>
 
-    <!-- NEW: File Content Diff Modal -->
     <div id="file-content-diff-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-button" id="close-diff-modal">&times;</span>
-            <h2 class="text-2xl font-bold text-blue-700 mb-4 text-center">
-                File Content Diff: <span id="diff-file-name" class="text-amber-600"></span>
+            <h2 class="text-2xl font-bold text-blue-400 mb-4 text-center">
+                File Content Diff: <span id="diff-file-name" class="text-amber-300"></span>
             </h2>
             <div class="diff-container">
                 <pre id="source-file-content" class="diff-pane"></pre>
                 <pre id="destination-file-content" class="diff-pane"></pre>
             </div>
-            <div id="diff-message" class="text-center text-gray-600 mt-4 hidden"></div>
+            <div id="diff-message" class="text-center text-gray-400 mt-4 hidden"></div>
         </div>
     </div>
 
@@ -513,6 +465,8 @@
             const fetchBranchesText = document.getElementById('fetch-branches-text');
             const sourceBranchSelect = document.getElementById('source-branch');
             const destinationBranchSelect = document.getElementById('destination-branch');
+            const fromDateInput = document.getElementById('from-date');
+            const toDateInput = document.getElementById('to-date');
             const compareBranchesBtn = document.getElementById('compare-branches-btn');
             const compareSpinner = document.getElementById('compare-spinner');
             const compareText = document.getElementById('compare-text');
@@ -526,24 +480,17 @@
             const sourceCommitsList = document.getElementById('source-commits-list');
             const destinationCommitsList = document.getElementById('destination-commits-list');
             const sourceCountDisplay = document.getElementById('source-count');
-            const destinationCountDisplay = document = document.getElementById('destination-count');
+            const destinationCountDisplay = document.getElementById('destination-count');
             const noSourceCommitsMessage = document.getElementById('no-source-commits-message');
             const noDestinationCommitsMessage = document.getElementById('no-destination-commits-message');
 
-            // NEW FILE COMPARISON ELEMENTS
             const fileComparisonOutput = document.getElementById('file-comparison-output');
             const sourceFilesBranchNameDisplay = document.getElementById('source-files-branch-name-display');
             const destinationFilesBranchNameDisplay = document.getElementById('destination-files-branch-name-display');
-            const sourceFilesTitle = document.getElementById('source-files-title');
-            const destinationFilesTitle = document.getElementById('destination-files-title');
-            const sourceFilesList = document.getElementById('source-files-list');
-            const destinationFilesList = document.getElementById('destination-files-list');
-            const sourceFilesCount = document.getElementById('source-files-count');
-            const destinationFilesCount = document = document.getElementById('destination-files-count');
-            const noSourceFilesMessage = document.getElementById('no-source-files-message');
-            const noDestinationFilesMessage = document.getElementById('no-destination-files-message');
+            const combinedFilesList = document.getElementById('combined-file-list');
+            const combinedFilesCount = document.getElementById('combined-files-count');
+            const noFilesMessage = document.getElementById('no-files-message');
 
-            // NEW FILE CONTENT DIFF MODAL ELEMENTS
             const fileContentDiffModal = document.getElementById('file-content-diff-modal');
             const closeDiffModalBtn = document.getElementById('close-diff-modal');
             const diffFileNameDisplay = document.getElementById('diff-file-name');
@@ -601,7 +548,6 @@
                 destinationBranchSelect.disabled = true;
                 compareBranchesBtn.disabled = true;
 
-                // Clear all previous outputs
                 commitComparisonOutput.classList.add('hidden');
                 sourceCommitsList.innerHTML = '';
                 destinationCommitsList.innerHTML = '';
@@ -611,14 +557,11 @@
                 destinationCountDisplay.textContent = '0';
 
                 fileComparisonOutput.classList.add('hidden');
-                sourceFilesList.innerHTML = '';
-                destinationFilesList.innerHTML = '';
-                noSourceFilesMessage.classList.add('hidden');
-                noDestinationFilesMessage.classList.add('hidden');
-                sourceFilesCount.textContent = '0';
-                destinationFilesCount.textContent = '0';
+                combinedFilesList.innerHTML = '';
+                combinedFilesCount.textContent = '0';
+                noFilesMessage.classList.add('hidden');
 
-                fileContentDiffModal.classList.add('hidden'); // Hide modal on new fetch
+                fileContentDiffModal.classList.add('hidden');
 
 
                 try {
@@ -671,6 +614,9 @@
                 const pat = patInput.value.trim();
                 const sourceBranch = sourceBranchSelect.value;
                 const destinationBranch = destinationBranchSelect.value;
+                const fromDate = fromDateInput.value;
+                const toDate = toDateInput.value;
+
 
                 if (!repoUrl || !sourceBranch || !destinationBranch) {
                     showError('Please provide a GitLab URL and select both branches.');
@@ -688,7 +634,6 @@
                     return;
                 }
 
-                // Clear previous outputs
                 commitComparisonOutput.classList.add('hidden');
                 sourceCommitsList.innerHTML = '';
                 destinationCommitsList.innerHTML = '';
@@ -698,25 +643,27 @@
                 destinationCountDisplay.textContent = '0';
 
                 fileComparisonOutput.classList.add('hidden');
-                sourceFilesList.innerHTML = '';
-                destinationFilesList.innerHTML = '';
-                noSourceFilesMessage.classList.add('hidden');
-                noDestinationFilesMessage.classList.add('hidden');
-                sourceFilesCount.textContent = '0';
-                destinationFilesCount.textContent = '0';
+                combinedFilesList.innerHTML = '';
+                combinedFilesCount.textContent = '0';
+                noFilesMessage.classList.add('hidden');
 
-                fileContentDiffModal.classList.add('hidden'); // Hide modal on new comparison
+                fileContentDiffModal.classList.add('hidden');
 
 
                 try {
-                    // Fetch commit comparison
                     const commitResponsePromise = fetch('/api/compare_commits', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ repoUrl: repoUrl, pat: pat, sourceBranch: sourceBranch, destinationBranch: destinationBranch }),
+                        body: JSON.stringify({
+                            repoUrl: repoUrl,
+                            pat: pat,
+                            sourceBranch: sourceBranch,
+                            destinationBranch: destinationBranch,
+                            fromDate: fromDate,
+                            toDate: toDate
+                        }),
                     });
 
-                    // Fetch file comparison
                     const fileResponsePromise = fetch('/api/compare_files', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -728,7 +675,6 @@
                     const commitData = await commitResponse.json();
                     const fileData = await fileResponse.json();
 
-                    // Handle Commit Data
                     if (commitResponse.ok) {
                         sourceBranchNameDisplay.textContent = sourceBranch;
                         destinationBranchNameDisplay.textContent = destinationBranch;
@@ -740,17 +686,10 @@
                         showError(`Commit comparison failed: ${commitData.error || 'Unknown error.'}`);
                     }
 
-                    // Handle File Data
                     if (fileResponse.ok) {
-                        sourceFilesBranchNameDisplay.textContent = sourceBranch;
-                        destinationFilesBranchNameDisplay.textContent = destinationBranch;
-                        sourceFilesTitle.textContent = sourceBranch;
-                        destinationFilesTitle.textContent = destinationBranch;
                         fileComparisonOutput.classList.remove('hidden');
-                        // Pass the new 'modified_files' array to renderFileComparison
                         renderFileComparison(fileData.source_files, fileData.destination_files, fileData.added_files_to_destination, fileData.deleted_files_from_source, fileData.modified_files);
                     } else {
-                        // Show file-specific error, but don't overwrite general error if commit failed
                         console.error('File comparison error:', fileData.error);
                         if (!commitResponse.ok) {
                             console.warn('Both commit and file comparison failed. Showing first error.');
@@ -769,12 +708,6 @@
                 }
             });
 
-            /**
-             * Renders the commit lists for source and destination branches,
-             * highlighting commits unique to each branch.
-             * @param {Array<Object>} sourceCommits - Array of commit objects for the source branch.
-             * @param {Array<Object>} destinationCommits - Array of commit objects for the destination branch.
-             */
             const renderCommitComparison = (sourceCommits, destinationCommits) => {
                 sourceCommitsList.innerHTML = '';
                 destinationCommitsList.innerHTML = '';
@@ -794,57 +727,40 @@
                     noDestinationCommitsMessage.classList.add('hidden');
                 }
 
-                // Create Sets of commit hashes for quick lookup
                 const sourceCommitHashes = new Set(sourceCommits.map(c => c.hash));
                 const destinationCommitHashes = new Set(destinationCommits.map(c => c.hash));
 
-                // Render Source Commits
                 sourceCommits.forEach(commit => {
                     let type = '';
-                    // If a commit is in source but NOT in destination
                     if (!destinationCommitHashes.has(commit.hash)) {
-                        type = 'unique'; // Mark as unique to source
+                        type = 'unique';
                     }
                     const commitItem = createCommitItemElement(commit, type);
                     sourceCommitsList.appendChild(commitItem);
                 });
 
-                // Render Destination Commits
                 destinationCommits.forEach(commit => {
                     let type = '';
-                    // If a commit is in destination but NOT in source
                     if (!sourceCommitHashes.has(commit.hash)) {
-                        type = 'unique'; // Mark as unique to destination
+                        type = 'unique';
                     }
                     const commitItem = createCommitItemElement(commit, type);
                     destinationCommitsList.appendChild(commitItem);
                 });
-
-                // Removed synchronized scrolling setup for commit panes
-                // setupSynchronizedScrolling();
             };
 
-            /**
-             * Creates a DOM element for a single commit item.
-             * @param {Object} commit - The commit object.
-             * @param {string} type - 'unique' or empty for default styling.
-             * @returns {HTMLElement} The created div element.
-             */
             const createCommitItemElement = (commit, type = '') => {
                 const commitDate = new Date(commit.date);
-                // Manually format to DD/MM/YYYY HH:MM:SS
                 const day = String(commitDate.getDate()).padStart(2, '0');
-                const month = String(commitDate.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+                const month = String(commitDate.getMonth() + 1).padStart(2, '0');
                 const year = commitDate.getFullYear();
                 const hours = String(commitDate.getHours()).padStart(2, '0');
                 const minutes = String(commitDate.getMinutes()).padStart(2, '0');
                 const seconds = String(commitDate.getSeconds()).padStart(2, '0');
-                // Added "at" between date and time
                 const formattedDateTime = `${day}/${month}/${year} at ${hours}:${minutes}:${seconds}`;
 
                 const commitDiv = document.createElement('div');
                 commitDiv.className = 'commit-item';
-                // Apply green highlight if the commit is unique to either branch
                 if (type === 'unique') {
                     commitDiv.classList.add('commit-new-to-destination');
                 }
@@ -859,32 +775,28 @@
                 return commitDiv;
             };
 
-            /**
-             * Creates a DOM element for a single file item.
-             * @param {string} filePath - The path of the file.
-             * @param {string} type - 'added', 'modified', or empty for default (unchanged) styling.
-             * @param {boolean} showBadge - Whether to show the "Added" or "Modified" badge.
-             * @returns {HTMLElement} The created div element.
-             */
-            const createFileItemElement = (filePath, type = '', showBadge = false) => {
+            const createFileItemElement = (filePath, type = '', showBadge = false, branchName = '') => {
                 const fileDiv = document.createElement('div');
                 fileDiv.className = 'file-item';
 
-                // Apply type-specific classes for background/border
                 if (type === 'added') {
                     fileDiv.classList.add('file-added');
-                } else if (type === 'modified') { // NEW: Add class for modified files
+                } else if (type === 'modified') {
                     fileDiv.classList.add('file-modified');
                 }
 
-                // Create a span for the file path
                 const filePathSpan = document.createElement('span');
                 filePathSpan.textContent = filePath;
                 fileDiv.appendChild(filePathSpan);
 
-                // Add the badge ONLY if showBadge is true and type is 'added' or 'modified'
                 if (showBadge) {
-                    const labelText = type === 'added' ? ' (Added)' : (type === 'modified' ? ' (Modified)' : '');
+                    let labelText = '';
+                    if (type === 'added') {
+                        labelText = ` (Added in ${branchName})`;
+                    } else if (type === 'modified') {
+                        labelText = ' (Modified)';
+                    }
+
                     if (labelText) {
                         const labelSpan = document.createElement('span');
                         labelSpan.textContent = labelText;
@@ -897,109 +809,53 @@
                 return fileDiv;
             };
 
-            /**
-             * Renders the file lists for source and destination branches,
-             * highlighting files unique to each branch with an "Added" label,
-             * and modified files with a "Modified" label.
-             * @param {Array<string>} sourceFiles - Array of file paths in the source branch.
-             * @param {Array<string>} destinationFiles - Array of file paths in the destination branch.
-             * @param {Array<string>} addedToDestination - Array of file paths added to destination (relative to source).
-             * @param {Array<string>} deletedFromSource - Array of file paths deleted from source (relative to destination).
-             * @param {Array<string>} modifiedFiles - Array of file paths that are modified.
-             */
             const renderFileComparison = (sourceFiles, destinationFiles, addedToDestination, deletedFromSource, modifiedFiles) => {
-                sourceFilesList.innerHTML = '';
-                destinationFilesList.innerHTML = '';
+                combinedFilesList.innerHTML = '';
 
-                sourceFilesCount.textContent = sourceFiles.length;
-                destinationFilesCount.textContent = destinationFiles.length;
+                let displayCount = 0;
+                const displayedFilePaths = new Set();
 
-                if (sourceFiles.length === 0) {
-                    noSourceFilesMessage.classList.remove('hidden');
+                const sourceBranchName = sourceBranchSelect.value;
+                const destinationBranchName = destinationBranchSelect.value;
+
+                sourceFilesBranchNameDisplay.textContent = sourceBranchName;
+                destinationFilesBranchNameDisplay.textContent = destinationBranchName;
+
+
+                addedToDestination.forEach(file => {
+                    if (!displayedFilePaths.has(file)) {
+                        const fileItem = createFileItemElement(file, 'added', true, destinationBranchName);
+                        combinedFilesList.appendChild(fileItem);
+                        displayedFilePaths.add(file);
+                        displayCount++;
+                    }
+                });
+
+                deletedFromSource.forEach(file => {
+                    if (!displayedFilePaths.has(file)) {
+                        const fileItem = createFileItemElement(file, 'added', true, sourceBranchName);
+                        combinedFilesList.appendChild(fileItem);
+                        displayedFilePaths.add(file);
+                        displayCount++;
+                    }
+                });
+
+                modifiedFiles.forEach(file => {
+                    if (!displayedFilePaths.has(file)) {
+                        const fileItem = createFileItemElement(file, 'modified', true);
+                        combinedFilesList.appendChild(fileItem);
+                        displayedFilePaths.add(file);
+                        displayCount++;
+                    }
+                });
+
+                combinedFilesCount.textContent = displayCount;
+
+                if (displayCount === 0) {
+                    noFilesMessage.classList.remove('hidden');
                 } else {
-                    noSourceFilesMessage.classList.add('hidden');
+                    noFilesMessage.classList.add('hidden');
                 }
-
-                if (destinationFiles.length === 0 && addedToDestination.length === 0) {
-                    noDestinationFilesMessage.classList.remove('hidden');
-                } else {
-                    noDestinationFilesMessage.classList.add('hidden');
-                }
-
-                const addedFilesSet = new Set(addedToDestination); // Files only in destination
-                const deletedFilesSet = new Set(deletedFromSource); // Files only in source (deleted from dest's view)
-                const modifiedFilesSet = new Set(modifiedFiles); // NEW: Set for modified files
-
-                // --- Prepare files for Source Panel ---
-                const sourceAddedFiles = [];
-                const sourceModifiedFiles = [];
-                const sourceUnchangedFiles = [];
-
-                sourceFiles.forEach(file => {
-                    if (deletedFilesSet.has(file)) {
-                        sourceAddedFiles.push(file);
-                    } else if (modifiedFilesSet.has(file)) {
-                        sourceModifiedFiles.push(file);
-                    } else {
-                        sourceUnchangedFiles.push(file);
-                    }
-                });
-
-                // Concatenate in desired order: Added, Modified, Unchanged
-                const orderedSourceFiles = [...sourceAddedFiles, ...sourceModifiedFiles, ...sourceUnchangedFiles];
-
-                // --- Prepare files for Destination Panel ---
-                const destAddedFiles = [];
-                const destModifiedFiles = [];
-                const destUnchangedFiles = [];
-
-                destinationFiles.forEach(file => {
-                    if (addedFilesSet.has(file)) {
-                        destAddedFiles.push(file);
-                    } else if (modifiedFilesSet.has(file)) {
-                        destModifiedFiles.push(file);
-                    } else {
-                        destUnchangedFiles.push(file);
-                    }
-                });
-
-                // Concatenate in desired order: Added, Modified, Unchanged
-                const orderedDestinationFiles = [...destAddedFiles, ...destModifiedFiles, ...destUnchangedFiles];
-
-
-                // Populate Source Files List
-                orderedSourceFiles.forEach(file => {
-                    let type = '';
-                    let showBadge = false;
-
-                    if (deletedFilesSet.has(file)) { // This means it's unique to source
-                        type = 'added';
-                        showBadge = true;
-                    } else if (modifiedFilesSet.has(file)) {
-                        type = 'modified';
-                        showBadge = true;
-                    }
-
-                    const fileItem = createFileItemElement(file, type, showBadge);
-                    sourceFilesList.appendChild(fileItem);
-                });
-
-                // Populate Destination Files List
-                orderedDestinationFiles.forEach(file => {
-                    let type = '';
-                    let showBadge = false;
-
-                    if (addedFilesSet.has(file)) { // This means it's unique to destination
-                        type = 'added';
-                        showBadge = true;
-                    } else if (modifiedFilesSet.has(file)) {
-                        type = 'modified';
-                        showBadge = true;
-                    }
-
-                    const fileItem = createFileItemElement(file, type, showBadge);
-                    destinationFilesList.appendChild(fileItem);
-                });
             };
 
 
@@ -1014,27 +870,24 @@
             sourceBranchSelect.addEventListener('change', updateCompareButtonState);
             destinationBranchSelect.addEventListener('change', updateCompareButtonState);
 
-            // Event listener for clicking on file items
             fileComparisonOutput.addEventListener('click', async (event) => {
                 const clickedFileItem = event.target.closest('.file-item');
                 if (clickedFileItem) {
                     const filePath = clickedFileItem.dataset.filepath;
                     if (filePath) {
-                        console.log('Attempting to show diff for file:', filePath); // Added console log
+                        console.log('Attempting to show diff for file:', filePath);
                         await showFileContentDiff(filePath);
                     }
                 }
             });
 
-            // Close modal button
             closeDiffModalBtn.addEventListener('click', () => {
                 fileContentDiffModal.classList.add('hidden');
-                sourceFileContentPre.innerHTML = ''; // Clear content
-                destinationFileContentPre.innerHTML = ''; // Clear content
-                diffMessageDiv.classList.add('hidden'); // Hide message
+                sourceFileContentPre.innerHTML = '';
+                destinationFileContentPre.innerHTML = '';
+                diffMessageDiv.classList.add('hidden');
             });
 
-            // Close modal if user clicks outside of it
             window.addEventListener('click', (event) => {
                 if (event.target === fileContentDiffModal) {
                     fileContentDiffModal.classList.add('hidden');
@@ -1044,18 +897,14 @@
                 }
             });
 
-            /**
-             * Fetches and displays the content diff for a given file.
-             * @param {string} filePath - The path of the file to diff.
-             */
             const showFileContentDiff = async (filePath) => {
                 diffFileNameDisplay.textContent = filePath;
                 sourceFileContentPre.innerHTML = '';
-                sourceFileContentPre.classList.remove('hidden'); // Ensure it's visible
+                sourceFileContentPre.classList.remove('hidden');
                 destinationFileContentPre.innerHTML = '';
-                destinationFileContentPre.classList.remove('hidden'); // Ensure it's visible
+                destinationFileContentPre.classList.remove('hidden');
                 diffMessageDiv.classList.add('hidden');
-                fileContentDiffModal.classList.remove('hidden'); // Show modal immediately
+                fileContentDiffModal.classList.remove('hidden');
 
                 const repoUrl = repoUrlInput.value.trim();
                 const pat = patInput.value.trim();
@@ -1077,7 +926,6 @@
                         } else {
                             diffMessageDiv.textContent = data.message || 'No content differences found for this file.';
                             diffMessageDiv.classList.remove('hidden');
-                            // Hide pre tags if no diff content
                             sourceFileContentPre.classList.add('hidden');
                             destinationFileContentPre.classList.add('hidden');
                         }
@@ -1096,10 +944,6 @@
                 }
             };
 
-            /**
-             * Parses a unified diff string and renders it in a side-by-side view.
-             * @param {string} unifiedDiff - The unified diff string from the backend.
-             */
             const renderSideBySideDiff = (unifiedDiff) => {
                 const lines = unifiedDiff.split('\n');
                 const sourceLinesHtml = [];
@@ -1107,23 +951,18 @@
 
                 lines.forEach(line => {
                     if (line.startsWith('---') || line.startsWith('+++')) {
-                        // Diff headers, display on both sides for context
                         sourceLinesHtml.push(`<div class="diff-line header">${escapeHtml(line)}</div>`);
                         destLinesHtml.push(`<div class="diff-line header">${escapeHtml(line)}</div>`);
                     } else if (line.startsWith('@@')) {
-                        // Hunk header, display on both sides
                         sourceLinesHtml.push(`<div class="diff-line header">${escapeHtml(line)}</div>`);
                         destLinesHtml.push(`<div class="diff-line header">${escapeHtml(line)}</div>`);
                     } else if (line.startsWith('-')) {
-                        // Deleted line: appears on source side, placeholder on destination
                         sourceLinesHtml.push(`<div class="diff-line deleted">${escapeHtml(line)}</div>`);
-                        destLinesHtml.push(`<div class="diff-line placeholder"></div>`); // Empty placeholder
+                        destLinesHtml.push(`<div class="diff-line placeholder"></div>`);
                     } else if (line.startsWith('+')) {
-                        // Added line: placeholder on source side, appears on destination
-                        sourceLinesHtml.push(`<div class="diff-line placeholder"></div>`); // Empty placeholder
+                        sourceLinesHtml.push(`<div class="diff-line placeholder"></div>`);
                         destLinesHtml.push(`<div class="diff-line added">${escapeHtml(line)}</div>`);
                     } else {
-                        // Unchanged/context line: appears on both sides
                         sourceLinesHtml.push(`<div class="diff-line unchanged">${escapeHtml(line)}</div>`);
                         destLinesHtml.push(`<div class="diff-line unchanged">${escapeHtml(line)}</div>`);
                     }
@@ -1132,23 +971,20 @@
                 sourceFileContentPre.innerHTML = sourceLinesHtml.join('');
                 destinationFileContentPre.innerHTML = destLinesHtml.join('');
 
-                // Synchronize scrolling of the diff panes
                 let isDiffScrolling = false;
                 const syncDiffScroll = (scrolledPane, otherPane) => {
                     if (!isDiffScrolling) {
-                        isScrolling = true;
+                        isDiffScrolling = true;
                         otherPane.scrollTop = scrolledPane.scrollTop;
                         otherPane.scrollLeft = scrolledPane.scrollLeft;
                     }
-                    // Reset flag after a short delay to allow natural scrolling
-                    setTimeout(() => { isScrolling = false; }, 50);
+                    setTimeout(() => { isDiffScrolling = false; }, 50);
                 };
 
                 sourceFileContentPre.onscroll = () => syncDiffScroll(sourceFileContentPre, destinationFileContentPre);
                 destinationFileContentPre.onscroll = () => syncDiffScroll(destinationFileContentPre, sourceFileContentPre);
             };
 
-            // Helper function to escape HTML for displaying raw text
             function escapeHtml(text) {
                 const map = {
                     '&': '&amp;',
@@ -1159,9 +995,6 @@
                 };
                 return text.replace(/[&<>"']/g, function (m) { return map[m]; });
             }
-            // ******************************************************
-            // END NEW: File Content Diff Logic
-            // ******************************************************
         });
     </script>
 </body>
