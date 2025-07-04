@@ -72,7 +72,7 @@ pip instal requirements.txt
 ### Run the Backend Server
 
 ```
-python app.py -> MAC
-py app.py     -> Windows
+```python app.py``` -> MAC
+```py app.py```     -> Windows
 ```
 ```Developed with 🧠 by Midhun.```
